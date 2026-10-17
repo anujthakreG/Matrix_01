@@ -20,6 +20,8 @@ COLUMN_ALIASES = {
     "fraud_category": config.COL_CATEGORY,
     "payment_channel": config.COL_SOURCE_CHANNEL,
     "hop_level": config.COL_MULE_HOP_COUNT,
+    "complaint_timestamp": config.COL_INCIDENT_TIME,
+    "timestamp": config.COL_INCIDENT_TIME,
 }
 
 

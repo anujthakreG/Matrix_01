@@ -63,14 +63,23 @@ The generated CSV conforms to `config.REQUIRED_DATASET_COLUMNS` plus explicit pr
 
 ---
 
-## 5. Train / Validation / Test Splitting Protocol
+## 5. Train / Validation / Test Splitting & Artifact Protocol
 
-To prevent temporal lookahead bias and data leakage, the training pipeline executes a strict **Chronological Split (70% Train / 15% Validation / 15% Test)**:
+To prevent temporal lookahead bias and data leakage, the training pipeline (`python -m backend.app.ml.train`) executes a strict **Chronological Split (70% Train / 15% Validation / 15% Test)**:
 1. De-duplicates complaint records by `complaint_id`.
-2. Chronologically sorts all complaints by `incident_time`.
+2. Chronologically sorts all complaints by `complaint_timestamp` (or `incident_time`).
 3. Partitions the earliest 70% into the training split, the subsequent 15% into validation, and the final 15% into testing.
-4. Groups rare target districts (< 5 occurrences in training) into `"OTHER"`.
-5. Fits all feature transformers and encoders **strictly on the training split**.
+4. Groups rare target districts (< `MIN_LOCATION_COUNT = 5` occurrences in training) into `"OTHER"`.
+5. Fits all feature transformers and label encoders **strictly on the training split**.
+6. **Baselines Benchmarked First**: Global Most-Frequent Location and State-Wise Most-Frequent Location.
+7. **Model Selection**: Selected based strictly on **Validation Top-3 Accuracy**.
+8. **Baseline Comparison**: A model is called "better" only if its Top-3 accuracy beats the best baseline on the test set.
+9. **Saved Artifacts** (`backend/artifacts/`):
+   - `model.joblib`: Trained winning classifier.
+   - `preprocessor.joblib`: Trained ColumnTransformer feature pipeline.
+   - `label_encoder.joblib`: Target location LabelEncoder.
+   - `withdrawal_predictor.joblib`: Unified inference artifact bundle.
+   - `metadata.json`: Contains `trained_on="SYNTHETIC"`, `model_version`, `feature_list`, `location_coordinate_mapping`, `performance_claim_warning`, `selection_metric="validation_top_3_accuracy"`, and validation/test metrics.
 
 ---
 

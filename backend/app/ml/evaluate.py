@@ -40,9 +40,9 @@ def evaluate_predictions(
     """
     n_samples = len(y_eval)
     if n_samples == 0:
-        logger.warning(
-            f"[{config.SYNTHETIC_DATA_DISCLAIMER}] Empty evaluation dataset provided. Returning zeroed metrics."
-        )
+        warning_msg = f"[{config.SYNTHETIC_DATA_DISCLAIMER}] Empty evaluation dataset provided. Returning zeroed metrics."
+        print(warning_msg)
+        logger.warning(warning_msg)
         return EvaluationMetrics(
             top_1_accuracy=0.0,
             top_3_accuracy=0.0,
@@ -123,10 +123,12 @@ def evaluate_predictions(
         disclaimer=config.SYNTHETIC_DATA_DISCLAIMER,
     )
 
-    logger.info(
+    metrics_output = (
         f"[{config.SYNTHETIC_DATA_DISCLAIMER}] Evaluation Results (N={n_samples}): "
         f"Top-1 Acc: {top_1_acc:.4f} | Top-3 Acc: {top_3_acc:.4f} | Top-5 Acc: {top_5_acc:.4f} | "
         f"MRR: {mrr:.4f} | Macro-F1: {macro_f1:.4f}"
     )
+    print(metrics_output)
+    logger.info(metrics_output)
 
     return metrics
