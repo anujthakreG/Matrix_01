@@ -1,9 +1,12 @@
 """
-Tests for complaint data preprocessing and normalization.
+Tests for complaint data preprocessing, normalization, and synthetic generation.
 Uses in-memory test fixtures strictly labelled SYNTHETIC_TEST_ONLY.
+Tests use tmp_path only and never write to backend/data/raw or backend/artifacts.
 """
 
+import json
 from datetime import datetime, timezone
+from pathlib import Path
 import pandas as pd
 import pytest
 
@@ -15,6 +18,8 @@ from backend.app.ml.preprocessing import (
     normalize_channel_string,
     normalize_location_string,
 )
+from backend.app.ml.synthetic import generate_synthetic_complaints, main as synthetic_main
+from backend.app.ml.data_loader import load_complaint_dataset
 
 # In-memory synthetic test fixture
 SYNTHETIC_TEST_ONLY_RECORD = {
@@ -98,3 +103,88 @@ def test_clean_and_normalize_dataframe():
     assert cleaned_df[config.COL_REPORTED_AMOUNT].iloc[1] == 0.0  # Clipped negative
     assert cleaned_df[config.COL_MULE_HOP_COUNT].iloc[1] == 1
     assert cleaned_df[config.COL_CATEGORY].iloc[1] == "vishing"
+
+
+# ------------------------------------------------------------------------------
+# Synthetic Generator Tests (Executing strictly inside tmp_path)
+# ------------------------------------------------------------------------------
+def test_synthetic_generator_schema_and_distribution(tmp_path: Path):
+    """
+    Verify synthetic generator:
+    - Conforms to REQUIRED_DATASET_COLUMNS
+    - Most common district < 20%
+    - Top 6 districts together around 35-40%
+    - Long tail presence for MIN_LOCATION_COUNT
+    - Uncorrupted target column
+    - Exact duplicates sharing complaint_id
+    - Valid mule_accounts JSON column matching mule_hop_count
+    """
+    df = generate_synthetic_complaints(num_rows=600, seed=42)
+
+    # 1. Required columns check
+    for col in config.REQUIRED_DATASET_COLUMNS:
+        assert col in df.columns, f"Missing required column: {col}"
+
+    assert "data_source" in df.columns
+    assert (df["data_source"] == "SYNTHETIC").all()
+    assert "mule_accounts" in df.columns
+
+    # 2. Verify mule_accounts JSON consistency with mule_hop_count
+    for _, row in df.iterrows():
+        accounts = json.loads(row["mule_accounts"])
+        assert len(accounts) == row["mule_hop_count"]
+
+    # 3. Class distribution checks
+    counts = df[config.TARGET_COLUMN].value_counts()
+    total = len(df)
+    top_share = counts.iloc[0] / total
+    top_6_share = counts.iloc[:6].sum() / total
+
+    # Most common district must be under 20%
+    assert top_share < 0.20, f"Top district share {top_share:.2%} exceeded 20%"
+    # Top 6 districts together around 35-40% (allowing 28-48% tolerance on 600 samples)
+    assert 0.28 <= top_6_share <= 0.48, f"Top 6 districts share {top_6_share:.2%} outside expected range"
+
+    # 4. Long tail check: at least one rare district with few rows
+    assert counts.iloc[-1] <= 5, "Long tail failed to produce rare districts"
+
+    # 5. Target column integrity: never null, all valid in DISTRICT_COORDINATES
+    assert df[config.TARGET_COLUMN].isna().sum() == 0
+    valid_districts = set(config.DISTRICT_COORDINATES.keys())
+    for d in df[config.TARGET_COLUMN]:
+        assert d in valid_districts, f"Unexpected target district '{d}'"
+
+    # 6. Exact duplicates check: duplicate complaint_ids share all values
+    id_counts = df["complaint_id"].value_counts()
+    dup_ids = id_counts[id_counts > 1].index
+    assert len(dup_ids) > 0, "No duplicate rows generated"
+    for dup_id in dup_ids:
+        sub_df = df[df["complaint_id"] == dup_id]
+        # Check that all rows with this complaint_id are identical
+        assert len(sub_df.drop_duplicates()) == 1
+
+    # 7. Ingestion test: save to tmp_path and verify data_loader loads it cleanly
+    out_file = tmp_path / "test_synthetic.csv"
+    df.to_csv(out_file, index=False)
+    loaded_df = load_complaint_dataset(out_file)
+    assert len(loaded_df) == len(df)
+
+
+def test_synthetic_cli_and_force_flag(tmp_path: Path):
+    """Verify synthetic generator CLI execution and overwrite protection."""
+    out_file = tmp_path / "cli_generated.csv"
+
+    # 1. Initial generation succeeds
+    ret = synthetic_main(["--rows", "100", "--seed", "123", "--output", str(out_file)])
+    assert ret == 0
+    assert out_file.exists()
+
+    # 2. Overwrite without --force fails cleanly
+    ret_fail = synthetic_main(["--rows", "100", "--seed", "123", "--output", str(out_file)])
+    assert ret_fail == 1
+
+    # 3. Overwrite with --force succeeds
+    ret_force = synthetic_main(["--rows", "150", "--seed", "123", "--output", str(out_file), "--force"])
+    assert ret_force == 0
+    df = pd.read_csv(out_file)
+    assert len(df) == 150

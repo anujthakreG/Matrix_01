@@ -4,37 +4,66 @@ This directory manages datasets for the **Predictive Analytics Framework for Cyb
 
 ---
 
-## 1. Synthetic Data Specification & Disclosure
+## 1. Synthetic Data Specification & Integrity Disclosure
 
 > **SYNTHETIC DATA - NOT A REAL-WORLD PERFORMANCE CLAIM**
 
-- **Synthetic Fixture**: The dataset used in this framework is purely synthetic. It contains **no real citizen records, no real personally identifiable information (PII), and no live banking credentials**.
-- **Research & Prototype Utility**: The dataset serves strictly as an offline functional benchmark and algorithmic test fixture for predictive pipeline integration.
-- **Integrity Disclosure**: Model metrics, evaluation scores, and forecasted cash-out clusters are generated against synthetic data and must not be cited as real-world operational performance claims.
+- **Synthetic Nature**: The datasets utilized or generated in this repository are purely synthetic test fixtures. They contain **no real citizen records, no personally identifiable information (PII), and no live banking credentials**.
+- **No Real Cybercrime Statistics**: **No real-world police or cybercrime statistics were used** in constructing the synthetic generator or determining district weights. All district weights, probabilities, and geographic correlations are **stylized synthetic modeling assumptions** designed solely to test ML algorithmic pipelines and interface contracts.
+- **Integrity Rule**: Model metrics, evaluation scores, and forecasted cash-out clusters are generated against synthetic data and must not be cited as real-world operational performance claims.
 
 ---
 
-## 2. Ingestion Dataset Schema
+## 2. Explicit Generator Assumptions (`synthetic.py`)
 
-Any complaint dataset placed into `backend/data/raw/` must adhere to the following schema:
+All heuristic modeling decisions in the synthetic data generator are explicitly cataloged as assumptions:
+
+* **ASSUMPTION 1 (Category Typologies)**: The canonical API fraud categories (`phishing`, `vishing`, `investment_scam`, `unauthorized_transfer`) are augmented with synthetic types (`task_scam`, `kyc_fraud`, `other`) to exercise diverse text normalization.
+* **ASSUMPTION 2 (Victim Demographics)**: Victim states and districts are sampled from an illustrative synthetic geographic catalog.
+* **ASSUMPTION 3 (Stylized District Weights)**: District distribution weights are stylized synthetic assumptions (top district < 20%, top 6 combined ~35-40%, with a long tail of rare districts) to test class imbalance and `MIN_LOCATION_COUNT` rare grouping. They do not represent real-world crime rates.
+* **ASSUMPTION 4 (Conditional Correlations & Noise)**: Heuristic conditional shifts (by category, victim state, and mule hop count) with 25-35% background noise provide non-deterministic variance for testing model learning capacity.
+* **ASSUMPTION 5 (18-Month Drift)**: A continuous linear drift parameter across an 18-month span (~May 2025 to October 2026) simulates gradual distribution shift to test chronological splitting.
+* **ASSUMPTION 6 (Financial Loss Amounts)**: Loss amounts approximate log-normal synthetic distributions by category.
+
+---
+
+## 3. Dataset Generation CLI
+
+The development dataset is generated via `backend/app/ml/synthetic.py`:
+
+```bash
+python -m backend.app.ml.synthetic --rows 5000 --seed 42 [--output PATH] [--force]
+```
+
+- **Default Output**: `backend/data/raw/SYNTHETIC_DEVELOPMENT_ONLY_complaints.csv`
+- **Safety**: Directory is created automatically if missing. Existing files will **never** be overwritten unless the `--force` flag is explicitly provided.
+- **Deterministic**: Fully deterministic given the random seed.
+
+---
+
+## 4. Ingestion Dataset Schema
+
+The generated CSV conforms to `config.REQUIRED_DATASET_COLUMNS` plus explicit provenance metadata:
 
 | Column Name | Data Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `complaint_id` | `str` | Unique complaint acknowledgement number | `CC-2026-10045` |
-| `incident_time` | `ISO-8601 str` | Timestamp when the financial fraud occurred | `2026-10-15T14:30:00` |
-| `reported_amount` | `float` | Defrauded financial value in INR | `85000.0` |
-| `category` | `str` | Modus operandi category | `upi_qr_phishing`, `part_time_task_fraud` |
-| `victim_state` | `str` | State of victim jurisdiction | `Haryana`, `Maharashtra` |
-| `victim_district` | `str` | District of victim jurisdiction | `Gurugram`, `Mumbai Suburban` |
-| `source_channel` | `str` | Payment transfer channel used | `UPI`, `IMPS`, `NEFT`, `AEPS` |
-| `mule_hop_count` | `int` | Number of intermediate mule accounts (>=0) | `1`, `2` |
-| `withdrawal_district`| `str` | **[Ground Truth Target]** Physical cashout district | `Bharatpur`, `Nuh`, `Mathura` |
+| `complaint_id` | `str` | Unique synthetic complaint identifier | `SYN-2026-100045` |
+| `incident_time` | `ISO-8601 str` | Synthetic incident timestamp (~18-month range) | `2025-11-15T14:30:00+00:00` |
+| `reported_amount` | `float` | Loss amount in INR (~1% non-positive for clipping test) | `45000.0` |
+| `category` | `str` | Modus operandi category (includes messy variants) | `upi_qr_phishing`, `VISHING` |
+| `victim_state` | `str` | State of victim jurisdiction | `Delhi`, `HARYANA` |
+| `victim_district` | `str` | District of victim jurisdiction (~3% missing values) | `South West Delhi`, `None` |
+| `source_channel` | `str` | Payment transfer channel used | `UPI`, `imps`, `NEFT` |
+| `mule_hop_count` | `int` | Number of intermediate mule accounts (0 to 4) | `2` |
+| `withdrawal_district`| `str` | **[Ground Truth Target]** Strictly uncorrupted valid district | `Nuh`, `Jamtara`, `Bharatpur` |
+| `data_source` | `str` | Provenance marker | `SYNTHETIC` |
+| `mule_accounts` | `str (JSON)`| Serialized list of masked accounts matching hop count | `["MULE-XXXX1042"]` |
 
-*(Note: Canonical aliases `amount_lost`, `fraud_category`, `payment_channel`, and `hop_level` are automatically mapped during ingestion).*
+*(Note: Geographic coordinates are NOT stored in the CSV; they are resolved from `config.DISTRICT_COORDINATES`).*
 
 ---
 
-## 3. Train / Validation / Test Splitting Protocol
+## 5. Train / Validation / Test Splitting Protocol
 
 To prevent temporal lookahead bias and data leakage, the training pipeline executes a strict **Chronological Split (70% Train / 15% Validation / 15% Test)**:
 1. De-duplicates complaint records by `complaint_id`.
@@ -45,7 +74,7 @@ To prevent temporal lookahead bias and data leakage, the training pipeline execu
 
 ---
 
-## 4. Directory Layout & Commit Policies
+## 6. Directory Layout & Commit Policies
 
 ```
 backend/data/
@@ -57,6 +86,6 @@ backend/data/
 ```
 
 ### Git Policy
-- **Never commit raw dataset files** (`*.csv`, `*.xlsx`, `*.json`, `*.parquet`) or database dumps to git.
+- **Never commit raw dataset files** (`*.csv`, `*.xlsx`, `*.json`, `*.parquet`) to git.
 - **Never commit trained model binary weights** (`*.joblib`, `*.pkl`) to git.
 - The `.gitignore` enforces exclusion of `backend/data/raw/*`, `backend/data/processed/*`, and `backend/artifacts/*` while retaining `.gitkeep` files.
