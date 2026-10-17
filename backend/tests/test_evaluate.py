@@ -14,8 +14,9 @@ from backend.app.ml.evaluate import evaluate_predictions
 SYNTHETIC_TEST_ONLY_EVAL_X = pd.DataFrame({
     config.COL_AMOUNT_LOG: [10.0, 11.0, 9.5, 12.0, 10.2],
     config.COL_MULE_HOP_COUNT: [1, 2, 1, 3, 2],
-    config.COL_INCIDENT_HOUR: [10, 14, 18, 9, 21],
-    config.COL_INCIDENT_DAYOFWEEK: [0, 2, 4, 1, 3],
+    config.COL_HOUR: [10, 14, 18, 9, 21],
+    config.COL_WEEKDAY: [0, 2, 4, 1, 3],
+    config.COL_IS_NIGHT: [0, 0, 0, 0, 0],
     config.COL_IS_WEEKEND: [0, 0, 0, 0, 0],
     config.COL_CATEGORY: ["upi_qr_phishing", "part_time_task_fraud", "vishing", "phishing", "other"],
     config.COL_VICTIM_STATE: ["Haryana", "Jharkhand", "Delhi", "Rajasthan", "Karnataka"],

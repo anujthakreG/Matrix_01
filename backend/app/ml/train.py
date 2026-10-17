@@ -343,3 +343,20 @@ def train_model(
         )
 
     return winning_pipeline, test_metrics, metadata
+
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    parser = argparse.ArgumentParser(description="Train cash withdrawal prediction model.")
+    parser.add_argument("--dataset", type=str, default=None, help="Path to raw dataset CSV")
+    parser.add_argument("--no-save", action="store_true", help="Do not save artifacts to disk")
+    args = parser.parse_args()
+
+    data_path = Path(args.dataset).resolve() if args.dataset else None
+    train_model(raw_dataset_path=data_path, save_artifacts=not args.no_save)

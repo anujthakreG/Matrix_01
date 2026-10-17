@@ -19,7 +19,6 @@ from backend.app.ml.schemas import (
 )
 from backend.app.ml.predict import predict_candidate_locations
 from backend.app.ml.model_loader import ModelLoader, model_loader
-from backend.app.ml.synthetic import generate_synthetic_complaints
 
 __all__ = [
     "MLConfig",
@@ -36,5 +35,4 @@ __all__ = [
     "predict_candidate_locations",
     "ModelLoader",
     "model_loader",
-    "generate_synthetic_complaints",
 ]

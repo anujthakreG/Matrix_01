@@ -65,7 +65,7 @@ def load_complaint_dataset(file_path: Optional[Path] = None) -> pd.DataFrame:
         DatasetNotFoundError: If file path does not exist.
         SchemaValidationError: If file fails required column schema validation.
     """
-    target_path = file_path or (config.DATA_RAW_DIR / "cybercrime_complaints.csv")
+    target_path = file_path or config.default_dataset_path
 
     if not target_path.exists():
         error_msg = f"Raw dataset not found at {target_path}."

@@ -22,6 +22,7 @@ class MLConfig(BaseModel):
 
     MODEL_FILENAME: str = "withdrawal_predictor.joblib"
     METADATA_FILENAME: str = "metadata.json"
+    DATASET_FILENAME: str = "SYNTHETIC_DEVELOPMENT_ONLY_complaints.csv"
 
     @property
     def model_path(self) -> Path:
@@ -30,6 +31,14 @@ class MLConfig(BaseModel):
     @property
     def metadata_path(self) -> Path:
         return self.ARTIFACTS_DIR / self.METADATA_FILENAME
+
+    @property
+    def default_dataset_path(self) -> Path:
+        primary = self.DATA_RAW_DIR / self.DATASET_FILENAME
+        if primary.exists():
+            return primary
+        fallback = self.DATA_RAW_DIR / "cybercrime_complaints.csv"
+        return fallback
 
     # --------------------------------------------------------------------------
     # Column Names - Input Payload (Worker 1 Interface Contract)
@@ -57,15 +66,24 @@ class MLConfig(BaseModel):
     COL_COMPLAINT_ID: str = "complaint_id"
     COL_INCIDENT_TIME: str = "incident_time"
     COL_REPORTED_AMOUNT: str = "reported_amount"
-    COL_AMOUNT_LOG: str = "reported_amount_log"
+    COL_AMOUNT_LOG: str = "log_amount"
     COL_CATEGORY: str = "category"
     COL_VICTIM_STATE: str = "victim_state"
     COL_VICTIM_DISTRICT: str = "victim_district"
     COL_SOURCE_CHANNEL: str = "source_channel"
     COL_MULE_HOP_COUNT: str = "mule_hop_count"
-    COL_INCIDENT_HOUR: str = "incident_hour"
-    COL_INCIDENT_DAYOFWEEK: str = "incident_dayofweek"
+    COL_HOUR: str = "hour"
+    COL_WEEKDAY: str = "weekday"
+    COL_IS_NIGHT: str = "is_night"
     COL_IS_WEEKEND: str = "is_weekend"
+
+    # Backward-compatible aliases
+    COL_INCIDENT_HOUR: str = "hour"
+    COL_INCIDENT_DAYOFWEEK: str = "weekday"
+
+    # Thresholds for preprocessing clipping
+    MIN_POSITIVE_AMOUNT: float = 1.0
+    MAX_AMOUNT_LIMIT: float = 10000000.0
 
     # Target & Baseline Columns
     TARGET_COLUMN: str = "withdrawal_district"
@@ -93,11 +111,12 @@ class MLConfig(BaseModel):
     # Feature Groups (Inference-Aligned: bank_code omitted)
     # --------------------------------------------------------------------------
     NUMERICAL_FEATURES: List[str] = [
-        "reported_amount_log",
-        "mule_hop_count",
-        "incident_hour",
-        "incident_dayofweek",
+        "hour",
+        "weekday",
+        "is_night",
         "is_weekend",
+        "log_amount",
+        "mule_hop_count",
     ]
     CATEGORICAL_FEATURES: List[str] = [
         "category",
