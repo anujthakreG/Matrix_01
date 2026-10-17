@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any, Optional
 from fastapi import Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 
@@ -76,7 +77,7 @@ def create_error_response(
     }
     if meta:
         payload["meta"] = meta
-    return JSONResponse(status_code=status_code, content=payload)
+    return JSONResponse(status_code=status_code, content=jsonable_encoder(payload))
 
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
