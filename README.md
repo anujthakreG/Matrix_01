@@ -43,7 +43,6 @@ MATRIX Intel is an end-to-end intelligence and investigation console designed to
 
 ## Live Deployment (IBM LinuxONE)
 
-- **Host / Public IP:** `http://148.100.112.215:8000`
 - **Tactical Dashboard:** `http://148.100.112.215:8000/dashboard/`
 - **Interactive OpenAPI Documentation:** `http://148.100.112.215:8000/docs`
 - **System Health & Hardware Telemetry:** `http://148.100.112.215:8000/api/v1/health`
@@ -58,7 +57,7 @@ MATRIX Intel is an end-to-end intelligence and investigation console designed to
    - Path resolution anchored via `PROJECT_ROOT` relative to `backend/app/db/session.py`, preventing working-directory drift.
    - Synthetic ground truth case `SYN-CASE-2026-001` preserved intact with linked financial transactions and coordinates.
 2. **Predictive ML Inference Engine (`POST /api/v1/predictions`):**
-   - Seamlessly calls Worker 2's `predict_candidate_locations` pipeline.
+   - Seamlessly calls `predict_candidate_locations` pipeline.
    - Computes probability distribution over withdrawal hotspots, assessed risk level (`low`, `medium`, `high`, `critical`), and model explanations.
    - Fully persisted in `predictions` table for historical auditability.
 3. **Directed Money Mule DAG Visualizer:**
@@ -79,7 +78,7 @@ Matrix_01/
 │   │   ├── api/v1/endpoints/       # FastAPI routes (cases, predictions, transactions, dashboard)
 │   │   ├── core/                   # Configuration & error handlers (CORS, jsonable_encoder)
 │   │   ├── db/                     # Models, Base, SessionLocal, and table initializers
-│   │   ├── ml/                     # Worker 2 ML inference, model loader, preprocessing, training
+│   │   ├── ml/                     # ML inference, model loader, preprocessing, training
 │   │   ├── schemas/                # Strict Pydantic contracts
 │   │   ├── services/               # Case, dashboard, and ML prediction business logic
 │   │   └── main.py                 # FastAPI application factory, static mount, and routes
