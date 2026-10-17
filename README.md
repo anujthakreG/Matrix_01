@@ -32,7 +32,7 @@ MATRIX Intel is an end-to-end intelligence and investigation console designed to
 │            SQLAlchemy 2.0 │                   │ Model Loader Hook      │
 │                           ▼                   ▼                        │
 │             ┌───────────────────┐   ┌──────────────────────────────┐   │
-│             │  SQLite Database  │   │  Worker 2 ML Pipeline        │   │
+│             │  SQLite Database  │   │   ML Pipeline                │   │
 │             │  data/matrix.db   │   │  (Scikit-Learn / joblib)     │   │
 │             │  (Preserved Cases)│   │  Withdrawal Hotspot Forecast │   │
 │             └───────────────────┘   └──────────────────────────────┘   │
