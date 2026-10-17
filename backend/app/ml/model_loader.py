@@ -1,7 +1,7 @@
 """
 Thread-safe singleton model loader.
-Implements lazy deserialization, comprehensive exception handling,
-and metadata configuration retrieval.
+Implements lazy deserialization, metadata verification, comprehensive exception handling,
+and readiness check that never raises.
 """
 
 import json
@@ -38,7 +38,7 @@ class ModelLoader:
         force_reload: bool = False,
     ) -> Dict[str, Any]:
         """
-        Load and cache the trained ML model artifact and associated metadata.
+        Load and cache the trained ML model artifact and verify associated metadata.
 
         Args:
             model_path: Optional custom path to model artifact .joblib file.
@@ -48,21 +48,33 @@ class ModelLoader:
             Dict containing pipeline, classes, district coordinates, and metadata.
 
         Raises:
-            ModelNotFoundError: If the artifact file does not exist on disk.
-            ModelLoadError: If deserialization fails.
+            ModelNotFoundError: If model artifact or metadata.json does not exist.
+            ModelLoadError: If deserialization fails or metadata is corrupted.
         """
         target_path = model_path or config.model_path
+        meta_path = target_path.parent / config.METADATA_FILENAME
 
         with self._lock:
             if self._artifact is None or force_reload:
+                # 1. Verify model artifact exists
                 if not target_path.exists():
                     error_msg = (
                         f"Model artifact not found at {target_path}. "
-                        f"Train the model using train_model() before invoking inference."
+                        f"Please train the model using 'python -m backend.app.ml.train' before invoking inference."
                     )
                     logger.error(error_msg)
                     raise ModelNotFoundError(error_msg)
 
+                # 2. Verify metadata.json exists
+                if not meta_path.exists():
+                    error_msg = (
+                        f"Model metadata not found at {meta_path}. "
+                        f"Please train the model using 'python -m backend.app.ml.train' to generate metadata.json."
+                    )
+                    logger.error(error_msg)
+                    raise ModelNotFoundError(error_msg)
+
+                # 3. Deserialize model artifact
                 try:
                     logger.info(f"Deserializing model artifact from {target_path}")
                     self._artifact = joblib.load(target_path)
@@ -71,41 +83,63 @@ class ModelLoader:
                     logger.error(error_msg)
                     raise ModelLoadError(error_msg) from exc
 
-                # Attempt to load metadata.json
-                meta_path = target_path.parent / config.METADATA_FILENAME
-                if meta_path.exists():
-                    try:
-                        with open(meta_path, "r", encoding="utf-8") as f:
-                            self._metadata = json.load(f)
-                    except Exception as meta_exc:
-                        logger.warning(f"Could not load metadata from {meta_path}: {meta_exc}")
-                        self._metadata = self._artifact.get("metadata", {})
-                else:
-                    self._metadata = self._artifact.get("metadata", {})
+                # 4. Load and verify metadata.json
+                try:
+                    with open(meta_path, "r", encoding="utf-8") as f:
+                        meta_content = json.load(f)
+                    if not isinstance(meta_content, dict):
+                        raise ValueError("Metadata root element must be a dictionary")
+                    self._metadata = meta_content
+                except Exception as meta_exc:
+                    error_msg = f"Corrupted or invalid metadata.json at {meta_path}: {meta_exc}"
+                    logger.error(error_msg)
+                    raise ModelLoadError(error_msg) from meta_exc
 
             return self._artifact
 
     def load_metadata(self, metadata_path: Optional[Path] = None) -> Dict[str, Any]:
-        """Retrieve cached metadata or load from disk."""
+        """Retrieve cached metadata or load from disk, raising ModelNotFoundError if absent."""
         target_path = metadata_path or config.metadata_path
 
         with self._lock:
             if self._metadata is not None:
                 return self._metadata
 
-            if target_path.exists():
-                try:
-                    with open(target_path, "r", encoding="utf-8") as f:
-                        self._metadata = json.load(f)
-                    return self._metadata
-                except Exception as exc:
-                    logger.warning(f"Failed to load metadata file at {target_path}: {exc}")
+            if not target_path.exists():
+                error_msg = (
+                    f"Model metadata file not found at {target_path}. "
+                    f"Please train the model using 'python -m backend.app.ml.train' before invoking inference."
+                )
+                logger.error(error_msg)
+                raise ModelNotFoundError(error_msg)
 
-            if self._artifact and "metadata" in self._artifact:
-                self._metadata = self._artifact["metadata"]
+            try:
+                with open(target_path, "r", encoding="utf-8") as f:
+                    self._metadata = json.load(f)
                 return self._metadata
+            except Exception as exc:
+                error_msg = f"Failed to load metadata file at {target_path}: {exc}"
+                logger.error(error_msg)
+                raise ModelLoadError(error_msg) from exc
 
-            return {}
+    def is_model_ready(self, model_path: Optional[Path] = None) -> bool:
+        """
+        Check if model artifacts exist and are ready for inference.
+        Guaranteed to NEVER raise an exception.
+
+        Returns:
+            bool: True if model and metadata exist or are loaded; False otherwise.
+        """
+        try:
+            if self._artifact is not None and self._metadata is not None:
+                return True
+
+            target_path = model_path or config.model_path
+            meta_path = target_path.parent / config.METADATA_FILENAME
+
+            return bool(target_path.is_file() and meta_path.is_file())
+        except Exception:
+            return False
 
     def is_model_loaded(self) -> bool:
         """Check if model artifact is currently in-memory."""
@@ -120,3 +154,8 @@ class ModelLoader:
 
 # Convenience singleton instance (lazy; does NOT perform disk I/O on import)
 model_loader = ModelLoader()
+
+
+def is_model_ready(model_path: Optional[Path] = None) -> bool:
+    """Module-level helper to check if model artifacts are ready. Never raises."""
+    return model_loader.is_model_ready(model_path=model_path)
