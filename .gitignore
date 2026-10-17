@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Local SQLite databases and data directories
-data/
+/data/
 *.db
 *.sqlite
 *.sqlite3

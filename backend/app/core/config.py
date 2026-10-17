@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # CORS Configuration
-    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: Union[str, List[str]] = (
+        "http://localhost:3000,http://localhost:5173,http://localhost:8000,"
+        "http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:8000,"
+        "http://148.100.112.215:3000,http://148.100.112.215:8000"
+    )
 
     # Database Configuration (SQLite default for dev; PostgreSQL/Db2 for LinuxONE)
     DATABASE_URL: str = "sqlite:///./data/matrix.db"

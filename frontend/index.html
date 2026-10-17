@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0d14">
+  <meta name="description" content="Cyber-TRAC tactical situational awareness console — demonstration interface using synthetic cybercrime intelligence records.">
+  <title>CYBER-TRAC | Tactical Situational Awareness Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="css/design-tokens.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <!-- Leaflet is loaded from a public CDN. The map module provides a schematic fallback if it is unavailable. -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to operational console</a>
+  <header class="topbar" aria-label="Platform status">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true"><span>CT</span></div>
+      <div class="brand-copy">
+        <div class="brand-name">CYBER-TRAC <span class="brand-version">v4.2</span></div>
+        <div class="brand-subtitle">I4C–NCRP INTEGRATED GATEWAY <span class="demo-tag">SIMULATION</span></div>
+      </div>
+    </div>
+    <div class="hardware-telemetry" aria-label="Infrastructure telemetry">
+      <div class="stream-state"><span class="status-dot" aria-hidden="true"></span><span id="stream-label">STREAM ACTIVE</span></div>
+      <div class="telemetry-copy"><span class="telemetry-node">NODE: IBM LinuxONE (s390x)</span><span class="telemetry-divider">|</span><span>INFERENCE <strong id="latency-value">3.4 ms</strong></span><span class="telemetry-divider">|</span><span>ARCH: CPACF ACCELERATED</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="clock-block"><span class="clock-label">IST</span><time id="clock-ist">--:--:--</time><span class="clock-separator">/</span><span class="clock-label">UTC</span><time id="clock-utc">--:--:--</time></div>
+      <div class="threat-condition"><span class="threat-indicator" aria-hidden="true"></span><span><b>DEFCON 2</b><small>ELEVATED CASH-OUT VELOCITY</small></span></div>
+    </div>
+  </header>
+
+  <main id="main-content" class="app-shell">
+    <section class="kpi-strip" aria-label="Operational summary">
+      <article class="kpi-card kpi-critical"><div class="kpi-heading"><span class="kpi-index">01</span><span>ACTIVE GOLDEN-WINDOW TARGETS</span><span class="kpi-mark" aria-hidden="true">◷</span></div><div class="kpi-value"><strong id="kpi-active">05</strong><span>incidents</span></div><div class="kpi-foot"><span class="risk-bar"><i style="width:74%"></i></span><span id="kpi-active-foot">Within 30-minute window</span></div></article>
+      <article class="kpi-card kpi-capital"><div class="kpi-heading"><span class="kpi-index">02</span><span>CAPITAL IN-FLIGHT</span><span class="kpi-mark" aria-hidden="true">₹</span></div><div class="kpi-value"><strong id="kpi-capital">₹20.80L</strong></div><div class="kpi-foot"><span class="tier-chip">T1</span><span class="tier-chip">T2</span><span class="tier-chip">T3</span><span id="kpi-capital-foot">Across tracked mule rings</span></div></article>
+      <article class="kpi-card kpi-spatial"><div class="kpi-heading"><span class="kpi-index">03</span><span>PREDICTED EXIT HOTSPOT RADIUS</span><span class="kpi-mark" aria-hidden="true">◎</span></div><div class="kpi-value"><strong id="kpi-radius">≤ 280</strong><span>meters</span></div><div class="kpi-foot"><span class="mini-dot dot-blue"></span><span>Spatial confidence-weighted estimate</span></div></article>
+      <article class="kpi-card kpi-units"><div class="kpi-heading"><span class="kpi-index">04</span><span>PATROL INTERCEPTION READINESS</span><span class="kpi-mark" aria-hidden="true">⌁</span></div><div class="kpi-value"><strong id="kpi-units">06</strong><span>units deployed</span></div><div class="kpi-foot"><span class="mini-dot dot-green"></span><span id="kpi-eta">Average ETA 4.2 min</span></div></article>
+    </section>
+
+    <section class="console-grid" aria-label="Tactical workspace">
+      <aside class="panel incident-panel" aria-labelledby="incident-heading">
+        <div class="panel-header">
+          <div><div class="eyebrow">01 / INTAKE & TRIAGE</div><h1 id="incident-heading">Incident Stream</h1></div>
+          <div class="header-metrics"><span id="incident-count" class="count-box">05</span><span class="muted-label">RECORDS</span></div>
+        </div>
+        <div class="panel-toolbar">
+          <label class="sr-only" for="incident-search">Search incidents</label>
+          <input type="search" id="incident-search" class="search-input" placeholder="Search ID, city, modus…" autocomplete="off">
+          <button type="button" id="clear-search" class="icon-button" aria-label="Clear search" title="Clear search">×</button>
+        </div>
+        <div class="filter-row" role="group" aria-label="Filter incidents">
+          <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true">All <span id="filter-all-count">05</span></button>
+          <button class="filter-button" type="button" data-filter="critical" aria-pressed="false">Critical <span>&lt;15m</span></button>
+          <button class="filter-button" type="button" data-filter="value" aria-pressed="false">High value <span>&gt;₹2L</span></button>
+          <button class="filter-button" type="button" data-filter="mule" aria-pressed="false">Mule ring</button>
+        </div>
+        <div class="stream-legend"><span><i class="legend-square legend-red"></i>CRITICAL</span><span><i class="legend-square legend-amber"></i>HIGH</span><span><i class="legend-square legend-green"></i>MONITOR</span></div>
+        <div id="incident-list" class="incident-list" aria-live="polite" aria-label="Filtered incident records">
+          <div class="loading-state"><span class="spinner" aria-hidden="true"></span>Loading synthetic incident records…</div>
+        </div>
+        <div class="panel-footer incident-footer"><span><span class="status-dot status-dot-small"></span> INGESTION ACTIVE</span><span id="last-ingest">LAST INGEST — --:--:-- IST</span></div>
+      </aside>
+
+      <section class="panel map-panel" aria-labelledby="map-heading">
+        <div class="panel-header map-header">
+          <div><div class="eyebrow">02 / SPATIO-TEMPORAL FORECAST</div><h2 id="map-heading">Tactical GIS / Cash-out Intercept</h2></div>
+          <div class="map-header-right"><span class="data-state"><i></i> DEMO FEED</span><button id="recenter-map" type="button" class="small-button">RE-CENTER <span aria-hidden="true">↗</span></button></div>
+        </div>
+        <div class="map-subbar"><span id="map-incident-label">TARGET: #NCRP-2026-9042</span><span class="map-separator">/</span><span id="map-area-label">INDORE / VIJAY NAGAR</span><span class="map-subbar-spacer"></span><span class="map-coordinates" id="map-coordinates">22.7467° N · 75.8947° E</span></div>
+        <div class="map-stage">
+          <div id="tactical-map" role="region" aria-label="Map showing forecast withdrawal zone, nearby cash points, estimated movement perimeter and patrol unit vector"></div>
+          <div id="map-fallback" class="map-fallback" hidden aria-label="Schematic map fallback"><svg id="fallback-svg" viewBox="0 0 800 520" role="img" aria-label="Schematic city grid with cash-out forecast zone"></svg><div class="fallback-note">SCHEMATIC MAP · TILE SERVICE UNAVAILABLE</div></div>
+          <div class="map-overlay map-overlay-top-left"><span class="overlay-label">FORECAST ZONE</span><strong id="map-radius-overlay">R 280 M</strong><span id="map-confidence-overlay">89% CERTAINTY</span></div>
+          <div class="map-overlay map-overlay-top-right"><span class="overlay-label">WINDOW STATUS</span><strong id="map-countdown-overlay" class="mono">T− 11:42</strong><span id="map-window-state" class="amber-text">INTERCEPTABLE</span></div>
+          <div class="map-legend" aria-label="Map legend"><div><span class="map-symbol hotspot-symbol"></span>Forecast hotspot</div><div><span class="map-symbol atm-symbol">A</span>Bank ATM</div><div><span class="map-symbol csp-symbol">C</span>CSP / AEPS</div><div><span class="map-symbol patrol-symbol">P</span>PCR patrol</div><div><span class="map-line-symbol"></span>Patrol vector</div></div>
+          <div class="map-scale-note">FORECAST MODEL OUTPUT · NOT A CONFIRMED LOCATION</div>
+        </div>
+        <div class="map-statusbar"><span><i class="status-square square-blue"></i>ST-GCN / HDBSCAN SPATIAL ESTIMATE</span><span><i class="status-square square-amber"></i>5–10 MIN MOVEMENT PERIMETER</span><span><i class="status-square square-green"></i>PCR VECTOR <b id="map-unit-state">STANDBY</b></span><span class="map-status-right" id="map-updated">UPDATED --:--:--</span></div>
+      </section>
+
+      <aside class="panel action-panel" aria-labelledby="action-heading">
+        <div class="panel-header">
+          <div><div class="eyebrow">03 / GRAPH & RESPONSE</div><h2 id="action-heading">Mule Network</h2></div>
+          <span class="graph-live"><i></i> GRAPH RESOLVED</span>
+        </div>
+        <div class="graph-summary"><span id="graph-target-id">#NCRP-2026-9042</span><span id="graph-node-count">04 NODES / 03 EDGES</span></div>
+        <div class="graph-wrap"><svg id="mule-graph" viewBox="0 0 460 205" role="img" aria-label="Transaction flow from victim through three mule tiers to predicted cash-out point"><text x="230" y="100" text-anchor="middle" fill="#8491a5">Resolving transaction graph…</text></svg></div>
+        <div class="graph-key"><span><i class="node-key key-victim"></i>VICTIM</span><span><i class="node-key key-mule"></i>MULE ACCOUNT</span><span><i class="node-key key-exit"></i>PREDICTED EXIT</span></div>
+
+        <div class="intel-section">
+          <div class="section-label-row"><h3>Actionable Intelligence</h3><span class="section-tag">MODEL ESTIMATE</span></div>
+          <dl class="intel-grid">
+            <div class="intel-field intel-wide"><dt>Predicted cash-out location</dt><dd id="intel-location">Axis ATM #4401 · Vijay Nagar</dd></div>
+            <div class="intel-field"><dt>Facility / channel</dt><dd id="intel-channel">BANK ATM</dd></div>
+            <div class="intel-field"><dt>Forecast radius</dt><dd id="intel-radius">280 m</dd></div>
+            <div class="intel-field intel-wide"><dt>Landmark / approach</dt><dd id="intel-landmark">Scheme 54 service road, Indore</dd></div>
+            <div class="intel-field"><dt>Suspect token</dt><dd id="intel-suspect" class="mono">CARD •••• 4401</dd></div>
+            <div class="intel-field"><dt>Spatial certainty</dt><dd id="intel-confidence" class="green-text">89%</dd></div>
+          </dl>
+          <div class="intel-caveat"><span aria-hidden="true">ⓘ</span><span>Forecast is probabilistic. Validate location and evidence through authorized procedures before field action.</span></div>
+          <button id="run-prediction-button" type="button" class="action-button action-prediction" style="margin-top: 10px; width: 100%; display: flex; align-items: center; justify-content: space-between; background: #131d2c; border: 1px solid #38bdf8; padding: 7px 9px; cursor: pointer;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <span class="button-glyph" aria-hidden="true" style="color: #38bdf8; background: #1e293b; border: 1px solid #38bdf8; width: 22px; height: 22px; display: grid; place-items: center; font-size: 11px;">⚡</span>
+              <span style="text-align: left;">
+                <b style="color: #f8fafc; font-size: 9px; display: block; letter-spacing: .02em;">EXECUTE ML WITHDRAWAL INFERENCE</b>
+                <small id="prediction-model-version" style="color: #94a3b8; font-size: 8px; display: block;">Worker 2 Model (s390x / Scikit-learn)</small>
+              </span>
+            </span>
+            <span class="button-arrow" aria-hidden="true" style="color: #38bdf8; font-size: 14px;">→</span>
+          </button>
+        </div>
+
+        <div class="dispatch-section">
+          <div class="section-label-row"><h3>Law Enforcement Actions</h3><span class="section-tag">SIMULATED</span></div>
+          <button id="dispatch-button" type="button" class="action-button action-dispatch"><span class="button-glyph" aria-hidden="true">➤</span><span><b>DISPATCH NEAREST PCR PATROL</b><small id="dispatch-button-sub">Unit PCR-06 · standby</small></span><span class="button-arrow" aria-hidden="true">→</span></button>
+          <button id="hold-button" type="button" class="action-button action-hold"><span class="button-glyph" aria-hidden="true">Ⅱ</span><span><b>BROADCAST SWITCH HOLD REQUEST</b><small>Simulation only · no bank connection</small></span><span class="button-arrow" aria-hidden="true">→</span></button>
+          <button id="advisory-button" type="button" class="action-button action-advisory"><span class="button-glyph" aria-hidden="true">▤</span><span><b>GENERATE TACTICAL ADVISORY</b><small>Print-ready field summary</small></span><span class="button-arrow" aria-hidden="true">→</span></button>
+        </div>
+        <div class="event-log-section"><div class="section-label-row"><h3>Event Log</h3><button id="clear-log" type="button" class="text-button">CLEAR VIEW</button></div><ol id="event-log" class="event-log" aria-live="polite"><li><time>--:--:--</time><span>Console initialized; awaiting data.</span></li></ol></div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="presentation-dock" aria-label="Demo controls and environment notice">
+    <div class="dock-left"><span class="dock-status-mark" aria-hidden="true">!</span><span class="dock-label">JUDGING / DEMONSTRATION CONTROL</span><span class="dock-separator">|</span><span class="dock-note">All incidents, predictions and response actions are synthetic.</span></div>
+    <button id="scenario-button" class="scenario-button" type="button"><span class="scenario-play" aria-hidden="true">▶</span> TRIGGER SCRIPTED ATTACK SCENARIO <span class="scenario-shortcut">DEMO</span></button>
+    <div class="dock-right"><span class="verified-mark" aria-hidden="true">✓</span><span>VERIFIED EXECUTION<br><b>LinuxONE s390x · CONTAINERIZED CLUSTER</b></span></div>
+  </footer>
+
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite" aria-atomic="true"></div>
+  <dialog id="action-dialog" class="action-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-header"><div><div class="eyebrow" id="dialog-eyebrow">ACTION / SIMULATION</div><h2 id="dialog-title">Action preview</h2></div><button id="dialog-close" type="button" class="icon-button dialog-close" aria-label="Close dialog">×</button></div>
+    <div id="dialog-content" class="dialog-content"></div>
+    <div id="dialog-actions" class="dialog-actions"></div>
+  </dialog>
+
+  <noscript><div class="noscript-warning">JavaScript is required to operate this console. Enable JavaScript and reload.</div></noscript>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- MATRIX Intel backend integration configuration. Auto-detects port 8000 (FastAPI) or falls back to host:8000 -->
+  <script>
+    (function() {
+      const host = window.location.hostname || 'localhost';
+      const port = window.location.port;
+      const origin = window.location.origin;
+      const defaultApi = (port === '8000') ? origin : `${window.location.protocol}//${host}:8000`;
+      window.CYBER_TRAC_CONFIG = Object.freeze({
+        apiBaseUrl: window.CYBER_TRAC_CONFIG?.apiBaseUrl || defaultApi,
+        incidentsPath: "/api/v1/cases",
+        webSocketUrl: ""
+      });
+    })();
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

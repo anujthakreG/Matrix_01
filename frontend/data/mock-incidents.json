@@ -1,0 +1,205 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataClassification": "SYNTHETIC DEMONSTRATION RECORDS — NOT REAL NCRP CASES",
+  "generatedAt": "2026-10-17T06:55:00Z",
+  "records": [
+    {
+      "id": "NCRP-2026-9042",
+      "city": "Indore",
+      "state": "Madhya Pradesh",
+      "area": "Vijay Nagar",
+      "fraudType": "Investment APK Scam",
+      "amountINR": 320000,
+      "remainingSeconds": 702,
+      "confidence": 89,
+      "muleRingLinked": true,
+      "complaintReceived": "12:14:08 IST",
+      "status": "FORECAST GENERATED",
+      "source": { "lat": 22.7534, "lon": 75.8918, "label": "Last digital transaction" },
+      "predictedExit": {
+        "name": "Axis ATM #4401 (fictional demo label)",
+        "type": "BANK ATM",
+        "bank": "Axis Bank",
+        "address": "Scheme 54 service road, Vijay Nagar, Indore",
+        "landmark": "Near Scheme 54 commercial block",
+        "lat": 22.7467,
+        "lon": 75.8947,
+        "radiusMeters": 280,
+        "etaMinutes": 4.2,
+        "suspectToken": "CARD •••• 4401",
+        "facilityId": "DEMO-ATM-4401"
+      },
+      "patrol": { "unitId": "PCR-06", "lat": 22.7592, "lon": 75.8826, "etaMinutes": 4.2, "state": "STANDBY" },
+      "cashpoints": [
+        { "id": "CP-01", "type": "ATM", "name": "HDFC ATM (demo marker)", "lat": 22.7489, "lon": 75.8899 },
+        { "id": "CP-02", "type": "CSP", "name": "CSP / AEPS kiosk (demo marker)", "lat": 22.7449, "lon": 75.8992 },
+        { "id": "CP-03", "type": "ATM", "name": "SBI ATM (demo marker)", "lat": 22.7517, "lon": 75.8998 }
+      ],
+      "transactionPath": [
+        { "id": "v1", "label": "VICTIM", "bank": "SBI", "role": "Victim account", "amountINR": 320000 },
+        { "id": "m1", "label": "TIER-1 MULE", "bank": "HDFC Bank", "role": "First-hop mule", "amountINR": 314500 },
+        { "id": "m2", "label": "TIER-2 MULE", "bank": "Airtel Payments", "role": "Layering account", "amountINR": 287000 },
+        { "id": "x1", "label": "FLAGGED EXIT", "bank": "Axis ATM #4401", "role": "Predicted cash-out", "amountINR": 180000 }
+      ],
+      "analystNote": "Synthetic transaction pattern generated for UI testing. Location and account path are illustrative only."
+    },
+    {
+      "id": "NCRP-2026-8917",
+      "city": "Delhi",
+      "state": "Delhi",
+      "area": "Lajpat Nagar",
+      "fraudType": "UPI Collect / Phishing",
+      "amountINR": 475000,
+      "remainingSeconds": 842,
+      "confidence": 82,
+      "muleRingLinked": true,
+      "complaintReceived": "12:11:32 IST",
+      "status": "GRAPH CORRELATED",
+      "source": { "lat": 28.5701, "lon": 77.2412, "label": "Last digital transaction" },
+      "predictedExit": {
+        "name": "Demo Cash Point DL-12",
+        "type": "CSP / AEPS",
+        "bank": "Payments channel (simulated)",
+        "address": "Central Market approach, Lajpat Nagar, Delhi",
+        "landmark": "Near Lajpat Nagar Central Market",
+        "lat": 28.5679,
+        "lon": 77.2431,
+        "radiusMeters": 260,
+        "etaMinutes": 5.1,
+        "suspectToken": "AEPS HASH ••7A9C",
+        "facilityId": "DEMO-CSP-DL12"
+      },
+      "patrol": { "unitId": "PCR-DL-12", "lat": 28.5743, "lon": 77.2344, "etaMinutes": 5.1, "state": "STANDBY" },
+      "cashpoints": [
+        { "id": "DL-CP-01", "type": "ATM", "name": "Bank ATM (demo marker)", "lat": 28.5691, "lon": 77.2377 },
+        { "id": "DL-CP-02", "type": "CSP", "name": "AEPS service point (demo marker)", "lat": 28.5658, "lon": 77.2464 },
+        { "id": "DL-CP-03", "type": "ATM", "name": "ATM cluster (demo marker)", "lat": 28.5722, "lon": 77.2471 }
+      ],
+      "transactionPath": [
+        { "id": "v1", "label": "VICTIM", "bank": "ICICI Bank", "role": "Victim account", "amountINR": 475000 },
+        { "id": "m1", "label": "TIER-1 MULE", "bank": "Kotak Bank", "role": "First-hop mule", "amountINR": 460000 },
+        { "id": "m2", "label": "TIER-2 MULE", "bank": "Payments Bank", "role": "Layering account", "amountINR": 402000 },
+        { "id": "x1", "label": "FLAGGED EXIT", "bank": "Demo Cash Point DL-12", "role": "Predicted cash-out", "amountINR": 175000 }
+      ],
+      "analystNote": "Synthetic example; no live NCRP or bank records are represented."
+    },
+    {
+      "id": "NCRP-2026-9008",
+      "city": "Indore",
+      "state": "Madhya Pradesh",
+      "area": "Palasia",
+      "fraudType": "Remote Access / APK Dropper",
+      "amountINR": 185000,
+      "remainingSeconds": 1312,
+      "confidence": 76,
+      "muleRingLinked": false,
+      "complaintReceived": "12:08:21 IST",
+      "status": "HOTSPOT UNDER REVIEW",
+      "source": { "lat": 22.7277, "lon": 75.8842, "label": "Last digital transaction" },
+      "predictedExit": {
+        "name": "Demo ATM PL-07",
+        "type": "BANK ATM",
+        "bank": "Bank ATM (simulated)",
+        "address": "AB Road frontage, Palasia, Indore",
+        "landmark": "Near Palasia square service lane",
+        "lat": 22.7248,
+        "lon": 75.8817,
+        "radiusMeters": 300,
+        "etaMinutes": 3.8,
+        "suspectToken": "CARD •••• 0927",
+        "facilityId": "DEMO-ATM-PL07"
+      },
+      "patrol": { "unitId": "PCR-03", "lat": 22.7335, "lon": 75.8918, "etaMinutes": 3.8, "state": "STANDBY" },
+      "cashpoints": [
+        { "id": "PL-CP-01", "type": "ATM", "name": "ATM south (demo marker)", "lat": 22.7218, "lon": 75.8862 },
+        { "id": "PL-CP-02", "type": "CSP", "name": "CSP booth (demo marker)", "lat": 22.7271, "lon": 75.8771 }
+      ],
+      "transactionPath": [
+        { "id": "v1", "label": "VICTIM", "bank": "Bank of Baroda", "role": "Victim account", "amountINR": 185000 },
+        { "id": "m1", "label": "TIER-1 MULE", "bank": "Federal Bank", "role": "First-hop mule", "amountINR": 181000 },
+        { "id": "m2", "label": "TIER-2 MULE", "bank": "UPI wallet", "role": "Layering account", "amountINR": 150000 },
+        { "id": "x1", "label": "FLAGGED EXIT", "bank": "Demo ATM PL-07", "role": "Predicted cash-out", "amountINR": 80000 }
+      ],
+      "analystNote": "Synthetic example. Lower confidence requires additional analyst review."
+    },
+    {
+      "id": "NCRP-2026-8991",
+      "city": "Bhopal",
+      "state": "Madhya Pradesh",
+      "area": "MP Nagar Zone 2",
+      "fraudType": "Task / Job Investment Scam",
+      "amountINR": 825000,
+      "remainingSeconds": 458,
+      "confidence": 93,
+      "muleRingLinked": true,
+      "complaintReceived": "12:16:47 IST",
+      "status": "EXIT VELOCITY HIGH",
+      "source": { "lat": 23.2352, "lon": 77.4319, "label": "Last digital transaction" },
+      "predictedExit": {
+        "name": "Demo ATM BPL-24",
+        "type": "BANK ATM",
+        "bank": "Axis Bank (simulated)",
+        "address": "Zone 2 commercial lane, MP Nagar, Bhopal",
+        "landmark": "Near MP Nagar Zone 2 market frontage",
+        "lat": 23.2338,
+        "lon": 77.4352,
+        "radiusMeters": 240,
+        "etaMinutes": 6.5,
+        "suspectToken": "CARD •••• 4812",
+        "facilityId": "DEMO-ATM-BPL24"
+      },
+      "patrol": { "unitId": "PCR-BPL-04", "lat": 23.2416, "lon": 77.4249, "etaMinutes": 6.5, "state": "STANDBY" },
+      "cashpoints": [
+        { "id": "BPL-CP-01", "type": "ATM", "name": "ATM cluster A (demo marker)", "lat": 23.2311, "lon": 77.4287 },
+        { "id": "BPL-CP-02", "type": "CSP", "name": "AEPS point B (demo marker)", "lat": 23.2361, "lon": 77.4382 },
+        { "id": "BPL-CP-03", "type": "ATM", "name": "ATM cluster C (demo marker)", "lat": 23.2388, "lon": 77.4321 }
+      ],
+      "transactionPath": [
+        { "id": "v1", "label": "VICTIM", "bank": "SBI", "role": "Victim account", "amountINR": 825000 },
+        { "id": "m1", "label": "TIER-1 MULE", "bank": "HDFC Bank", "role": "First-hop mule", "amountINR": 801000 },
+        { "id": "m2", "label": "TIER-2 MULE", "bank": "Payments Bank", "role": "Layering account", "amountINR": 744000 },
+        { "id": "x1", "label": "FLAGGED EXIT", "bank": "Demo ATM BPL-24", "role": "Predicted cash-out", "amountINR": 340000 }
+      ],
+      "analystNote": "Synthetic case with short time-to-exit; forecast is not a verified cash-out event."
+    },
+    {
+      "id": "NCRP-2026-9028",
+      "city": "Delhi",
+      "state": "Delhi",
+      "area": "Dwarka Sector 12",
+      "fraudType": "SIM Swap / UPI Takeover",
+      "amountINR": 275000,
+      "remainingSeconds": 1690,
+      "confidence": 71,
+      "muleRingLinked": true,
+      "complaintReceived": "12:04:52 IST",
+      "status": "MULE PATH PARTIAL",
+      "source": { "lat": 28.5947, "lon": 77.0452, "label": "Last digital transaction" },
+      "predictedExit": {
+        "name": "Demo CSP DW-09",
+        "type": "CSP / AEPS",
+        "bank": "AEPS channel (simulated)",
+        "address": "Sector 12 market approach, Dwarka, Delhi",
+        "landmark": "Near Sector 12 market access road",
+        "lat": 28.5918,
+        "lon": 77.0476,
+        "radiusMeters": 300,
+        "etaMinutes": 3.5,
+        "suspectToken": "AEPS HASH ••91D2",
+        "facilityId": "DEMO-CSP-DW09"
+      },
+      "patrol": { "unitId": "PCR-DW-09", "lat": 28.6002, "lon": 77.0402, "etaMinutes": 3.5, "state": "STANDBY" },
+      "cashpoints": [
+        { "id": "DW-CP-01", "type": "ATM", "name": "ATM west (demo marker)", "lat": 28.5889, "lon": 77.0444 },
+        { "id": "DW-CP-02", "type": "CSP", "name": "AEPS booth (demo marker)", "lat": 28.5908, "lon": 77.0523 }
+      ],
+      "transactionPath": [
+        { "id": "v1", "label": "VICTIM", "bank": "Punjab National Bank", "role": "Victim account", "amountINR": 275000 },
+        { "id": "m1", "label": "TIER-1 MULE", "bank": "IndusInd Bank", "role": "First-hop mule", "amountINR": 266000 },
+        { "id": "m2", "label": "TIER-2 MULE", "bank": "UPI wallet", "role": "Layering account", "amountINR": 224000 },
+        { "id": "x1", "label": "FLAGGED EXIT", "bank": "Demo CSP DW-09", "role": "Predicted cash-out", "amountINR": 90000 }
+      ],
+      "analystNote": "Synthetic case; partial graph resolution is represented for interface demonstration."
+    }
+  ]
+}

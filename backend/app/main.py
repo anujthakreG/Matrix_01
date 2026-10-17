@@ -1,16 +1,21 @@
 """FastAPI Application entrypoint, middleware, exception handlers, and routing."""
 
 import logging
+import pathlib
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 
 from backend.app.core.config import settings
 from backend.app.core.errors import AppException, app_exception_handler, create_error_response
 from backend.app.db.init_db import create_tables
+from backend.app.db.session import get_db
+from backend.app.services.case_service import CaseService
 from backend.app.api.v1.api import api_router
 
 logger = logging.getLogger("matrix_intel")
@@ -100,10 +105,33 @@ def create_application() -> FastAPI:
             "redoc": "/redoc",
             "api_v1": settings.API_V1_PREFIX,
             "health": f"{settings.API_V1_PREFIX}/health",
+            "dashboard": "/dashboard",
         }
 
     # 4. Include Version 1 API routers
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+    # 5. Frontend compatibility endpoint (/api/incidents -> mapped verified case records)
+    @app.get(
+        "/api/incidents",
+        tags=["Compatibility"],
+        summary="Frontend compatibility alias for cases",
+        description="Returns case records in the format expected by the frontend incident feed.",
+    )
+    def get_incidents_alias(db: Session = Depends(get_db)) -> dict:
+        result = CaseService.get_cases(db=db, page=1, page_size=50)
+        return {
+            "schemaVersion": "1.0.0",
+            "dataClassification": "VERIFIED MATRIX INTEL CASES",
+            "total": result.total,
+            "records": [case.model_dump() for case in result.items],
+        }
+
+    # 6. Mount static frontend dashboard at /dashboard
+    frontend_dir = pathlib.Path(__file__).resolve().parents[2] / "frontend"
+    if frontend_dir.is_dir():
+        logger.info(f"Mounting static frontend dashboard from {frontend_dir} at /dashboard")
+        app.mount("/dashboard", StaticFiles(directory=str(frontend_dir), html=True), name="dashboard")
 
     return app
 
