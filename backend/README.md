@@ -1,24 +1,16 @@
-# MATRIX Intel — Backend API & Database Implementation
+MATRIX Intel Backend
+Backend API, database, and machine-learning integration documentation
+The MATRIX Intel backend is a predictive analytics system developed for the IBM Z Datathon 2026. It analyzes authorized cybercrime complaint records, transaction flows, and mule account behaviors to forecast candidate cash-withdrawal locations (e.g. ATM hubs, bank branches) to help law-enforcement and cyber-investigation teams prioritize cases.
+The application is built with FastAPI, Pydantic v2, and SQLAlchemy 2.0, designed for deployment on IBM LinuxONE Community Cloud (s390x architecture / Red Hat Enterprise Linux / Ubuntu).
+1. System Architecture
+The backend exposes versioned REST APIs for case management, transaction-network analysis, dashboard metrics, geographic queries, and machine-learning predictions.
+Component	Responsibility
+Backend API and database	FastAPI routes, request/response schemas, database models, service logic, CORS configuration, and automated tests
+Machine-learning pipeline	Data preprocessing, feature engineering, model training and evaluation, artifact management, and inference
+Frontend dashboard	User interface that consumes the backend's versioned API endpoints
 
-The **MATRIX Intel** backend is a predictive analytics system developed for the **IBM Z Datathon 2026**. It analyzes authorized cybercrime complaint records, transaction flows, and mule account behaviors to forecast candidate cash-withdrawal locations (e.g. ATM hubs, bank branches) to help law-enforcement and cyber-investigation teams prioritize cases.
 
-The application is built with **FastAPI**, **Pydantic v2**, and **SQLAlchemy 2.0**, designed for deployment on **IBM LinuxONE Community Cloud** (s390x architecture / Red Hat Enterprise Linux / Ubuntu).
-
----
-
-## 1. System Architecture & Workstream Boundaries
-
-| Workstream | Owner | Scope & Responsibility |
-| :--- | :--- | :--- |
-| **Backend API & Database** | **Worker 1 (This Module)** | FastAPI setup, routes, Pydantic contracts, database models & sessions, service business logic, CORS, test suite, and API documentation. |
-| **Data & ML Pipeline** | **Worker 2** | Preprocessing, feature engineering, training, model evaluation, artifact generation in `backend/app/ml/`, and inference implementation. |
-| **Frontend Dashboard** | **Frontend Developer** | React / Vite UI dashboard located in `frontend/`. Consumes `/api/v1` endpoints. |
-
----
-
-## 2. Directory Structure
-
-```text
+2. Directory Structure
 backend/
 ├── .env.example                 # Template for environment configuration (no secrets)
 ├── requirements.txt             # Python dependencies
@@ -74,20 +66,13 @@ backend/
     ├── test_locations.py        # Location querying and disclaimer verification
     ├── test_transactions.py     # Graph network nodes/edges and empty topology handling
     └── test_cors_and_errors.py  # CORS policy and 422 error schema tests
-```
 
----
-
-## 3. Quickstart & Installation
-
-### Prerequisites
+3. Quickstart & Installation
+Prerequisites
 - Python 3.10+ (tested on Python 3.13)
 - Git
-- Virtual environment tool (`venv`)
-
-### 1. Create and Activate Virtual Environment
-
-```bash
+- Virtual environment tool (venv)
+1. Create and Activate Virtual Environment
 # On Linux / macOS / IBM LinuxONE:
 python3 -m venv .venv
 source .venv/bin/activate
@@ -95,23 +80,12 @@ source .venv/bin/activate
 # On Windows (PowerShell):
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-```
-
-### 2. Install Dependencies
-
-```bash
+2. Install Dependencies
 pip install -r backend/requirements.txt
-```
-
-### 3. Configure Environment Variables
-
-```bash
+3. Configure Environment Variables
 # Copy example configuration
 cp backend/.env.example backend/.env
-```
-
-Review and adjust `backend/.env`:
-```ini
+Review and adjust backend/.env:
 ENVIRONMENT=development
 DEBUG=true
 PORT=8000
@@ -119,65 +93,39 @@ HOST=0.0.0.0
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 DATABASE_URL=sqlite:///./data/matrix.db
 ML_MODEL_ENABLED=false
-```
-
-### 4. Initialize Database Schema
-
-```bash
+4. Initialize Database Schema
 # Create empty tables:
 python -m backend.app.db.init_db
 
 # (Optional) Seed minimal synthetic development sample data:
 python -m backend.app.db.init_db --seed
-```
-
-### 5. Run the API Server
-
-```bash
+5. Run the API Server
 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
 The interactive OpenAPI documentation will be available at:
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
-- **Health check:** `http://localhost:8000/api/v1/health`
-
----
-
-## 4. Database Integration & Production Compatibility
-
-### Local Development vs Production
-
-- **Local Development:** Uses SQLite (`sqlite:///./data/matrix.db`). Fast, zero-setup, and automatically creates the local storage directory.
-- **IBM LinuxONE Production:** Compatible with PostgreSQL (`postgresql+psycopg2://...`) or IBM Db2 (`ibm_db_sa://...`) via standard SQLAlchemy connection strings.
-- **Testing:** Automated tests run against isolated in-memory SQLite instances (`sqlite:///:memory:` with `StaticPool`), ensuring zero pollution of disk databases.
-
-### Relational Schema Design
-
-1. **`cases` table:** Stores cybercrime complaint records (title, description, category, status, priority, reported amount, victim location, incident timestamps).
-   - Indexed on: `case_number` (unique), `status`, `priority`, `category`, `incident_date`, `victim_state`, `victim_district`.
-2. **`transactions` table:** Stores financial money flows between victim and suspect mule accounts.
-   - Indexed on: `case_id`, `receiver_account`, `transaction_time`.
-3. **`locations` table:** Stores geographic coordinates for reported incident locations and forecasted withdrawal candidate points.
-   - Indexed on: `case_id`, `location_type`, `is_predicted`, `state`, `district`.
-4. **`predictions` table:** Persists audit logs of ML inference executions, input features, and forecasted candidate coordinates.
-   - Indexed on: `prediction_uuid` (unique), `case_id`.
-
----
-
-## 5. ML Interface Contract (Coordination with Worker 2)
-
-Worker 2 is developing the data engineering and ML pipeline under `backend/app/ml/`. The API layer in `backend/app/services/ml_service.py` is decoupled and interfaces through this agreed contract:
-
-### 1. Function / Callable Signature
-Worker 2 will implement an inference function (e.g., in `backend.app.ml.inference`):
-```python
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- Health check: http://localhost:8000/api/v1/health
+4. Database Integration & Production Compatibility
+Local Development vs Production
+- Local Development: Uses SQLite (sqlite:///./data/matrix.db). Fast, zero-setup, and automatically creates the local storage directory.
+- IBM LinuxONE Production: Compatible with PostgreSQL (postgresql+psycopg2://...) or IBM Db2 (ibm_db_sa://...) via standard SQLAlchemy connection strings.
+- Testing: Automated tests run against isolated in-memory SQLite instances (sqlite:///:memory: with StaticPool), ensuring zero pollution of disk databases.
+Relational Schema Design
+1. cases table: Stores cybercrime complaint records (title, description, category, status, priority, reported amount, victim location, incident timestamps).
+   - Indexed on: case_number (unique), status, priority, category, incident_date, victim_state, victim_district.
+2. transactions table: Stores financial money flows between victim and suspect mule accounts.
+   - Indexed on: case_id, receiver_account, transaction_time.
+3. locations table: Stores geographic coordinates for reported incident locations and forecasted withdrawal candidate points.
+   - Indexed on: case_id, location_type, is_predicted, state, district.
+4. predictions table: Persists audit logs of ML inference executions, input features, and forecasted candidate coordinates.
+   - Indexed on: prediction_uuid (unique), case_id.
+5. Machine-Learning Interface
+The API layer in backend/app/services/ml_service.py is decoupled from the model implementation and uses the following inference contract:
+1. Function / Callable Signature
+The inference module should expose a callable such as backend.app.ml.inference:
 def predict_candidate_locations(features: dict) -> dict:
     ...
-```
-
-### 2. Input Features Payload
-```json
+2. Input Features Payload
 {
   "case_id": 1,
   "case_number": "CASE-2026-0001",
@@ -192,10 +140,7 @@ def predict_candidate_locations(features: dict) -> dict:
   "origin_longitude": 77.2167,
   "overrides": {}
 }
-```
-
-### 3. Expected Return Payload
-```json
+3. Expected Return Payload
 {
   "model_version": "v1.0-lightgbm-geo",
   "risk_score": 0.88,
@@ -218,39 +163,24 @@ def predict_candidate_locations(features: dict) -> dict:
   ],
   "explanation": "High velocity multi-hop transfer indicates immediate cash-out intent."
 }
-```
-
-### 4. Availability & Error Handling
-- **When ML model is not ready:** If `ML_MODEL_ENABLED=false` or Worker 2's model is not initialized, `POST /api/v1/predictions` returns **HTTP 503 Service Unavailable**:
-  ```json
-  {
+4. Availability & Error Handling
+- When ML model is not ready: If ML_MODEL_ENABLED=false or the model is not initialized, POST /api/v1/predictions returns HTTP 503 Service Unavailable:{
     "status": "error",
     "error_code": "ML_MODEL_UNAVAILABLE",
-    "detail": "ML inference model is currently not ready or unavailable. Worker 2 model pipeline is pending integration.",
+    "detail": "ML inference model is currently not ready or unavailable. The ML inference model is not yet initialized or available.",
     "path": "/api/v1/predictions",
     "timestamp": "2026-10-17T11:00:00Z"
   }
-  ```
-  *The API never fabricates dummy scores or claims a prediction succeeded when the model is not ready.*
-- **Mandatory Disclaimers:** All candidate withdrawal locations are explicitly labeled:
-  `"Predicted candidate location only - not confirmed cash withdrawal or proof of criminal activity."`
-
----
-
-## 6. Frontend Developer Integration Guide
-
-### Base URL & Versioning
-All API endpoints are versioned under `/api/v1`.
-Base URL: `http://localhost:8000/api/v1`
-
-### CORS Policy
-CORS origins are configured via `CORS_ORIGINS` in `.env`. By default, Vite (`http://localhost:5173`) and React (`http://localhost:3000`) dev servers are allowed. Wildcard (`*`) is strictly rejected in production environments.
-
-### Standard Response Schemas
-
-#### Pagination Envelope (`PaginatedResponse[T]`)
-Used by list endpoints (e.g. `GET /api/v1/cases`):
-```json
+  The API never fabricates dummy scores or claims a prediction succeeded when the model is not ready.
+- Mandatory Disclaimers: All candidate withdrawal locations are explicitly labeled: "Predicted candidate location only - not confirmed cash withdrawal or proof of criminal activity."
+6. Frontend Developer Integration Guide
+Base URL & Versioning
+All API endpoints are versioned under /api/v1. Base URL: http://localhost:8000/api/v1
+CORS Policy
+CORS origins are configured via CORS_ORIGINS in .env. By default, Vite (http://localhost:5173) and React (http://localhost:3000) dev servers are allowed. Wildcard (*) is strictly rejected in production environments.
+Standard Response Schemas
+Pagination Envelope (PaginatedResponse[T])
+Used by list endpoints (e.g. GET /api/v1/cases):
 {
   "items": [ ... ],
   "total": 42,
@@ -258,11 +188,8 @@ Used by list endpoints (e.g. `GET /api/v1/cases`):
   "page_size": 20,
   "total_pages": 3
 }
-```
-
-#### Error Envelope (`ErrorResponse`)
+Error Envelope (ErrorResponse)
 Returned on 4xx and 5xx errors:
-```json
 {
   "status": "error",
   "error_code": "RESOURCE_NOT_FOUND",
@@ -271,38 +198,25 @@ Returned on 4xx and 5xx errors:
   "timestamp": "2026-10-17T11:00:00Z",
   "meta": null
 }
-```
-
----
-
-## 7. API Endpoint Reference
-
-### 1. `GET /api/v1/health`
-- **Purpose:** Diagnostic health check reporting backend, DB, and ML service status.
-- **Query / Body:** None.
-- **Status Codes:** 200 OK.
-- **Example Response:**
-  ```json
-  {
+7. API Endpoint Reference
+1. GET /api/v1/health
+- Purpose: Diagnostic health check reporting backend, DB, and ML service status.
+- Query / Body: None.
+- Status Codes: 200 OK.
+- Example Response:{
     "status": "healthy",
     "app_name": "MATRIX Intel API",
     "version": "1.0.0",
     "environment": "development",
     "database": "connected",
-    "ml_service": "uninitialized (Worker 2 model integration pending)",
+    "ml_service": "uninitialized",
     "timestamp": "2026-10-17T11:00:00Z"
   }
-  ```
-
----
-
-### 2. `GET /api/v1/dashboard/summary`
-- **Purpose:** Aggregated cybercrime summary indicators derived strictly from verified database records.
-- **Query / Body:** None.
-- **Status Codes:** 200 OK.
-- **Example Response:**
-  ```json
-  {
+2. GET /api/v1/dashboard/summary
+- Purpose: Aggregated cybercrime summary indicators derived strictly from verified database records.
+- Query / Body: None.
+- Status Codes: 200 OK.
+- Example Response:{
     "total_cases": 12,
     "total_cases_open": 8,
     "total_cases_under_investigation": 3,
@@ -324,25 +238,19 @@ Returned on 4xx and 5xx errors:
     },
     "last_updated": "2026-10-17T11:00:00Z"
   }
-  ```
-
----
-
-### 3. `GET /api/v1/cases`
-- **Purpose:** List cases with pagination, search, and multi-field filtering.
-- **Query Parameters:**
-  - `page` (int, default 1, ge=1): Page number.
-  - `page_size` (int, default 20, ge=1, le=100): Page limit.
-  - `status` (string, optional): Filter by `open`, `under_investigation`, `closed`.
-  - `priority` (string, optional): Filter by `low`, `medium`, `high`, `critical`.
-  - `category` (string, optional): Filter by category substring (e.g. `phishing`).
-  - `search` (string, optional): Search keyword matched across case number, title, description, district, or state.
-  - `date_from` (ISO 8601 datetime, optional): Earliest incident timestamp.
-  - `date_to` (ISO 8601 datetime, optional): Latest incident timestamp.
-- **Status Codes:** 200 OK, 422 Validation Error.
-- **Example Response:**
-  ```json
-  {
+3. GET /api/v1/cases
+- Purpose: List cases with pagination, search, and multi-field filtering.
+- Query Parameters:
+  - page (int, default 1, ge=1): Page number.
+  - page_size (int, default 20, ge=1, le=100): Page limit.
+  - status (string, optional): Filter by open, under_investigation, closed.
+  - priority (string, optional): Filter by low, medium, high, critical.
+  - category (string, optional): Filter by category substring (e.g. phishing).
+  - search (string, optional): Search keyword matched across case number, title, description, district, or state.
+  - date_from (ISO 8601 datetime, optional): Earliest incident timestamp.
+  - date_to (ISO 8601 datetime, optional): Latest incident timestamp.
+- Status Codes: 200 OK, 422 Validation Error.
+- Example Response:{
     "items": [
       {
         "id": 1,
@@ -369,17 +277,11 @@ Returned on 4xx and 5xx errors:
     "page_size": 20,
     "total_pages": 1
   }
-  ```
-
----
-
-### 4. `GET /api/v1/cases/{case_id}`
-- **Purpose:** Retrieve complete case dossier including linked transactions and coordinates.
-- **Path Parameter:** `case_id` (int, ge=1).
-- **Status Codes:** 200 OK, 404 Not Found, 422 Validation Error.
-- **Example Response:**
-  ```json
-  {
+4. GET /api/v1/cases/{case_id}
+- Purpose: Retrieve complete case dossier including linked transactions and coordinates.
+- Path Parameter: case_id (int, ge=1).
+- Status Codes: 200 OK, 404 Not Found, 422 Validation Error.
+- Example Response:{
     "id": 1,
     "case_number": "SYN-CASE-2026-001",
     "title": "Unauthorized UPI Transfer via Vishing",
@@ -431,15 +333,9 @@ Returned on 4xx and 5xx errors:
       }
     ]
   }
-  ```
-
----
-
-### 5. `POST /api/v1/predictions`
-- **Purpose:** Request cash-withdrawal location forecasts and risk evaluation from ML module.
-- **Request Body (`PredictionRequest`):**
-  ```json
-  {
+5. POST /api/v1/predictions
+- Purpose: Request cash-withdrawal location forecasts and risk evaluation from ML module.
+- Request Body (PredictionRequest):{
     "case_id": 1,
     "reported_amount": 150000.0,
     "complaint_narrative": "Victim reports unauthorized UPI debits to suspect accounts.",
@@ -448,11 +344,8 @@ Returned on 4xx and 5xx errors:
     "origin_latitude": 28.6315,
     "origin_longitude": 77.2167
   }
-  ```
-- **Status Codes:** 200 OK, 404 Not Found (Case missing), 422 Validation Error, 503 Service Unavailable (Model not ready).
-- **Example Response:**
-  ```json
-  {
+- Status Codes: 200 OK, 404 Not Found (Case missing), 422 Validation Error, 503 Service Unavailable (Model not ready).
+- Example Response:{
     "prediction_id": "PRED-8A3F2C10E45B",
     "case_id": 1,
     "model_version": "v1.0-lightgbm-geo",
@@ -477,38 +370,26 @@ Returned on 4xx and 5xx errors:
     "disclaimer": "Predicted candidate location only - not confirmed cash withdrawal or proof of criminal activity.",
     "created_at": "2026-10-17T11:00:00Z"
   }
-  ```
-
----
-
-### 6. `GET /api/v1/predictions/{prediction_id}`
-- **Purpose:** Retrieve a previously computed and stored prediction record by UUID or ID.
-- **Path Parameter:** `prediction_id` (string).
-- **Status Codes:** 200 OK, 404 Not Found.
-
----
-
-### 7. `GET /api/v1/locations`
-- **Purpose:** Query reported incident points and candidate cash-withdrawal locations for map visualizers.
-- **Query Parameters:**
-  - `case_id` (int, optional): Filter by case.
-  - `location_type` (string, optional): `reported`, `candidate_withdrawal`, `atm`, `branch`, `pos`.
-  - `state` (string, optional): State name.
-  - `district` (string, optional): District name.
-  - `min_risk` (float, optional, 0.0 to 1.0): Minimum risk score filter.
-  - `limit` (int, default 50, max 200): Point limit.
-  - `offset` (int, default 0): Pagination offset.
-- **Status Codes:** 200 OK.
-
----
-
-### 8. `GET /api/v1/transactions/{case_id}/network`
-- **Purpose:** Retrieve graph topology (nodes and directed edges) representing financial flow from victim to mule accounts and candidate ATMs.
-- **Path Parameter:** `case_id` (int, ge=1).
-- **Status Codes:** 200 OK, 404 Not Found (if case does not exist).
-- **Example Response:**
-  ```json
-  {
+6. GET /api/v1/predictions/{prediction_id}
+- Purpose: Retrieve a previously computed and stored prediction record by UUID or ID.
+- Path Parameter: prediction_id (string).
+- Status Codes: 200 OK, 404 Not Found.
+7. GET /api/v1/locations
+- Purpose: Query reported incident points and candidate cash-withdrawal locations for map visualizers.
+- Query Parameters:
+  - case_id (int, optional): Filter by case.
+  - location_type (string, optional): reported, candidate_withdrawal, atm, branch, pos.
+  - state (string, optional): State name.
+  - district (string, optional): District name.
+  - min_risk (float, optional, 0.0 to 1.0): Minimum risk score filter.
+  - limit (int, default 50, max 200): Point limit.
+  - offset (int, default 0): Pagination offset.
+- Status Codes: 200 OK.
+8. GET /api/v1/transactions/{case_id}/network
+- Purpose: Retrieve graph topology (nodes and directed edges) representing financial flow from victim to mule accounts and candidate ATMs.
+- Path Parameter: case_id (int, ge=1).
+- Status Codes: 200 OK, 404 Not Found (if case does not exist).
+- Example Response:{
     "case_id": 1,
     "case_number": "SYN-CASE-2026-001",
     "nodes": [
@@ -556,30 +437,17 @@ Returned on 4xx and 5xx errors:
     "total_nodes": 3,
     "total_edges": 1
   }
-  ```
-
----
-
-## 8. Running Automated Tests
-
+8. Running Automated Tests
 Run the complete test suite using pytest:
-
-```bash
 python -m pytest backend/tests -v
-```
-
-### Coverage Highlights
-- **Health check & root discovery:** Verifies app startup, DB connection, and ML status.
-- **Case pagination & multi-criteria filtering:** Verifies bounds, category, priority, status, date ranges, and text search.
-- **Truthful dashboard metrics:** Tests that zero-records produce zeros (not fabricated numbers), and populated databases aggregate counts correctly.
-- **ML interface readiness & error contracts:** Ensures 503 is returned when Worker 2's model is uninitialized, tests 404 on missing cases, tests full prediction generation with registered inference hooks, and verifies prediction persistence.
-- **Transaction networks:** Validates node-edge graph structures, mule classification, and empty flow handling.
-- **CORS & Error handling:** Confirms origin validation and standardized 422 JSON payloads.
-
----
-
-## 9. Assumptions, Incomplete Features, and Integration Dependencies
-
-1. **Worker 2 ML Model Integration:** The API layer provides a pluggable inference interface (`MLPredictionService.register_predictor`) and checks for `backend.app.ml.inference`. By design, when Worker 2 has not yet deployed the model, the endpoint returns HTTP 503 with an honest explanation rather than fabricating predictions.
-2. **Database Migration Framework:** The current implementation uses SQLAlchemy's declarative table creation (`create_tables()`) which supports SQLite, PostgreSQL, and IBM Db2 out of the box. If schema migrations across production deployments are required, Alembic can be configured on top of the existing `Base.metadata`.
-3. **Data Anonymization:** In compliance with security and privacy requirements, all sample data and test fixtures use synthetic, pseudonymized identifiers (`ACC-MULE-XXXX`, `SYN-CASE-XXXX`). No real citizen complaints or banking credentials are ever stored.
+Coverage Highlights
+- Health check & root discovery: Verifies app startup, DB connection, and ML status.
+- Case pagination & multi-criteria filtering: Verifies bounds, category, priority, status, date ranges, and text search.
+- Truthful dashboard metrics: Tests that zero-records produce zeros (not fabricated numbers), and populated databases aggregate counts correctly.
+- ML interface readiness & error contracts: Ensures 503 is returned when the model is uninitialized, tests 404 on missing cases, tests full prediction generation with registered inference hooks, and verifies prediction persistence.
+- Transaction networks: Validates node-edge graph structures, mule classification, and empty flow handling.
+- CORS & Error handling: Confirms origin validation and standardized 422 JSON payloads.
+9. Implementation Notes and Limitations
+1. ML Model Integration: The API layer provides a pluggable inference interface (MLPredictionService.register_predictor) and can load the inference module from backend.app.ml.inference. By design, when the inference model is not available, the endpoint returns HTTP 503 with an honest explanation rather than fabricating predictions.
+2. Database Migration Framework: The current implementation uses SQLAlchemy's declarative table creation (create_tables()) which supports SQLite, PostgreSQL, and IBM Db2 out of the box. If schema migrations across production deployments are required, Alembic can be configured on top of the existing Base.metadata.
+3. Data Anonymization: In compliance with security and privacy requirements, all sample data and test fixtures use synthetic, pseudonymized identifiers (ACC-MULE-XXXX, SYN-CASE-XXXX). No real citizen complaints or banking credentials are ever stored.
