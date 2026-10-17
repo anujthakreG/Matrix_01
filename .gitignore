@@ -26,3 +26,13 @@ env/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Machine Learning artifacts and raw datasets (retain .gitkeep)
+backend/artifacts/*
+!backend/artifacts/.gitkeep
+backend/data/raw/*
+!backend/data/raw/.gitkeep
+backend/data/processed/*
+!backend/data/processed/.gitkeep
+*.joblib
+*.pkl

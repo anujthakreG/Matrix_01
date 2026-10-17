@@ -7,12 +7,24 @@ honest availability reporting, and database persistence for prediction records.
 """
 
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Optional, Protocol, Callable, Dict, Any, List
+from fastapi import status
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 from backend.app.core.config import settings
-from backend.app.core.errors import MLServiceUnavailableError, ResourceNotFoundError
+from backend.app.core.errors import (
+    AppException,
+    BadRequestError,
+    MLServiceUnavailableError,
+    ResourceNotFoundError,
+)
+from backend.app.ml.exceptions import (
+    InvalidInputError,
+    ModelNotFoundError,
+    ModelLoadError,
+)
 from backend.app.db.models import CaseModel, PredictionRecordModel
 from backend.app.schemas.predictions import (
     PredictionRequest,
@@ -20,6 +32,8 @@ from backend.app.schemas.predictions import (
     CandidateLocation,
     StoredPredictionResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MLModelPredictor(Protocol):
@@ -70,16 +84,16 @@ class MLPredictionService:
         if cls._predictor_hook is not None:
             return True
 
-        # Check if Worker 2 has enabled the model and provided an importable inference module
+        # Check if Worker 2 has enabled the model in settings
         if not settings.ML_MODEL_ENABLED:
             return False
 
         try:
-            # Check for Worker 2's module without overwriting or assuming its existence
-            from backend.app.ml import inference  # type: ignore
+            from backend.app.ml.model_loader import is_model_ready as ml_is_model_ready
+            from backend.app.ml.inference import predict_candidate_locations
 
-            if hasattr(inference, "predict_candidate_locations"):
-                cls._predictor_hook = getattr(inference, "predict_candidate_locations")
+            if ml_is_model_ready():
+                cls._predictor_hook = predict_candidate_locations
                 return True
         except (ImportError, ModuleNotFoundError):
             pass
@@ -130,10 +144,24 @@ class MLPredictionService:
             "origin_latitude": request.origin_latitude,
             "origin_longitude": request.origin_longitude,
             "overrides": request.feature_overrides or {},
+            "incident_date": case.incident_date.isoformat() if case.incident_date else None,
+            "reported_at": case.reported_at.isoformat() if case.reported_at else None,
         }
 
-        # 4. Invoke inference hook
-        raw_output = cls._predictor_hook(feature_payload)
+        # 4. Invoke inference hook with domain error translation
+        try:
+            raw_output = cls._predictor_hook(feature_payload)
+        except InvalidInputError as exc:
+            raise BadRequestError(detail=f"Invalid prediction input: {exc}", error_code="INVALID_INPUT")
+        except (ModelNotFoundError, ModelLoadError) as exc:
+            raise MLServiceUnavailableError(detail=f"ML inference model is currently unavailable: {exc}")
+        except Exception as exc:
+            logger.exception(f"Unexpected error during ML inference: {exc}")
+            raise AppException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="ML_INFERENCE_ERROR",
+                detail=f"Inference execution failed: {exc}",
+            )
 
         # 5. Parse and structure candidate locations with explicit disclaimers
         candidate_locs: List[CandidateLocation] = []
@@ -157,6 +185,7 @@ class MLPredictionService:
         risk_level = str(raw_output.get("risk_level", "medium")).lower()
         key_factors = raw_output.get("key_risk_factors", ["Mule account velocity", "Geographic proximity"])
         explanation = raw_output.get("explanation", "Forecast based on transaction pattern signals.")
+        reporting_delay = raw_output.get("reporting_delay_hours")
         disclaimer_text = (
             "Predicted candidate location only - not confirmed cash withdrawal or proof of criminal activity."
         )
@@ -186,6 +215,7 @@ class MLPredictionService:
             candidate_locations=candidate_locs,
             key_risk_factors=key_factors,
             disclaimer=disclaimer_text,
+            reporting_delay_hours=reporting_delay,
             created_at=db_prediction.created_at,
         )
 

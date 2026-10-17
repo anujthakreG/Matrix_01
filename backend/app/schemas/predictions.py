@@ -77,6 +77,10 @@ class PredictionResponse(BaseModel):
         default="Predicted candidate location only - not confirmed cash withdrawal or proof of criminal activity.",
         description="Mandatory investigative disclaimer",
     )
+    reporting_delay_hours: Optional[float] = Field(
+        default=None,
+        description="Computed reporting delay in hours between incident and report filing",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp of prediction generation",

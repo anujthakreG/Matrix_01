@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     DB_ECHO: bool = False
 
     # Worker 2 ML Module Integration Configuration
-    ML_MODEL_ENABLED: bool = False
-    ML_MODEL_ARTIFACT_PATH: str = "./app/ml/artifacts/model.joblib"
+    ML_MODEL_ENABLED: bool = True
+    ML_MODEL_ARTIFACT_PATH: str = "./backend/artifacts/withdrawal_predictor.joblib"
 
     @property
     def cors_origins_list(self) -> List[str]:

@@ -7,12 +7,24 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from backend.app.core.config import settings
 
-# Ensure data directory exists if using default SQLite path
+# Resolve project root (<root>/backend/app/db/session.py -> parents[3] is repository root)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
 database_url = settings.DATABASE_URL
-if database_url.startswith("sqlite:///./"):
-    db_relative_path = database_url.replace("sqlite:///./", "")
-    db_dir = Path(db_relative_path).parent
-    db_dir.mkdir(parents=True, exist_ok=True)
+if database_url.startswith("sqlite:///") and not database_url.startswith("sqlite:///:memory:"):
+    raw_path = database_url[len("sqlite:///"):]
+    p = Path(raw_path)
+    if not p.is_absolute():
+        target_in_root = PROJECT_ROOT / p
+        target_in_cwd = Path.cwd() / p
+        if target_in_root.exists():
+            resolved_path = target_in_root.resolve()
+        elif target_in_cwd.exists():
+            resolved_path = target_in_cwd.resolve()
+        else:
+            resolved_path = target_in_root.resolve()
+        resolved_path.parent.mkdir(parents=True, exist_ok=True)
+        database_url = f"sqlite:///{resolved_path.as_posix()}"
 
 # Connection arguments (SQLite needs check_same_thread=False for FastAPI concurrency)
 connect_args = {}
