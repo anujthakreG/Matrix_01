@@ -166,6 +166,43 @@ class MLConfig(BaseModel):
         "ATM",
     ]
 
+    KNOWN_STATES: List[str] = [
+        "Andhra Pradesh",
+        "Arunachal Pradesh",
+        "Assam",
+        "Bihar",
+        "Chhattisgarh",
+        "Goa",
+        "Gujarat",
+        "Haryana",
+        "Himachal Pradesh",
+        "Jharkhand",
+        "Karnataka",
+        "Kerala",
+        "Madhya Pradesh",
+        "Maharashtra",
+        "Manipur",
+        "Meghalaya",
+        "Mizoram",
+        "Nagaland",
+        "Odisha",
+        "Punjab",
+        "Rajasthan",
+        "Sikkim",
+        "Tamil Nadu",
+        "Telangana",
+        "Tripura",
+        "Uttar Pradesh",
+        "Uttarakhand",
+        "West Bengal",
+        "Delhi",
+        "Chandigarh",
+        "Jammu and Kashmir",
+        "Ladakh",
+        "Puducherry",
+        "other",
+    ]
+
     # --------------------------------------------------------------------------
     # Geographic Centroid Registry (Strictly Valid Coordinates Only - 38 Districts)
     # --------------------------------------------------------------------------

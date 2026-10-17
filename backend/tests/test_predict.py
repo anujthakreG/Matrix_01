@@ -93,7 +93,7 @@ def test_model_not_found_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert not is_model_ready()
     assert not model_loader.is_model_ready()
 
-    payload = {"case_id": 999}
+    payload = {"case_id": 999, "reported_amount": 50000.0}
     with pytest.raises(ModelNotFoundError) as exc_info:
         predict_candidate_locations(payload)
 
@@ -109,7 +109,30 @@ def test_invalid_input_exceptions(tiny_model_env):
         predict_candidate_locations({})  # missing case_id
 
     with pytest.raises(InvalidInputError):
-        predict_candidate_locations({"case_id": None})
+        predict_candidate_locations({"case_id": None, "reported_amount": 50000.0})
+
+
+def test_reported_amount_validation(tiny_model_env):
+    """Verify reported_amount <= 0 or None raises InvalidInputError."""
+    # 1. Missing reported_amount
+    with pytest.raises(InvalidInputError):
+        predict_candidate_locations({"case_id": 1})
+
+    # 2. None reported_amount
+    with pytest.raises(InvalidInputError):
+        predict_candidate_locations({"case_id": 2, "reported_amount": None})
+
+    # 3. Zero reported_amount
+    with pytest.raises(InvalidInputError):
+        predict_candidate_locations({"case_id": 3, "reported_amount": 0.0})
+
+    # 4. Negative reported_amount
+    with pytest.raises(InvalidInputError):
+        predict_candidate_locations({"case_id": 4, "reported_amount": -1500.0})
+
+    # 5. Non-numeric reported_amount
+    with pytest.raises(InvalidInputError):
+        predict_candidate_locations({"case_id": 5, "reported_amount": "not_a_number"})
 
 
 def test_predict_locations_pydantic_contract(tiny_model_env):
@@ -135,7 +158,14 @@ def test_predict_locations_pydantic_contract(tiny_model_env):
 
 
 def test_predict_candidate_locations_contract(tiny_model_env):
-    """Verify exact interface contract compliance as expected by Worker 1."""
+    """
+    Verify exact interface contract compliance and additional Worker 1 output rules:
+    - candidate name = "<district>, <state>"
+    - confidence_score clipped to [0, 1]
+    - latitude within [-90, 90], longitude within [-180, 180]
+    - risk_level is one of exactly: low, medium, high, critical (lowercase)
+    - Do NOT return disclaimer, prediction_id, case_id or created_at
+    """
     payload = {
         "case_id": 42,
         "case_number": "CC-2026-42",
@@ -154,39 +184,53 @@ def test_predict_candidate_locations_contract(tiny_model_env):
     result = predict_candidate_locations(payload)
 
     # 1. Output keys check
-    for key in [
+    expected_keys = {
         "model_version",
         "risk_score",
         "risk_level",
         "candidate_locations",
         "key_risk_factors",
         "explanation",
-    ]:
-        assert key in result
+    }
+    assert expected_keys.issubset(set(result.keys()))
 
-    # 2. Synthetic string assertion in version and explanation
+    # 2. Strict Rule: Do NOT return disclaimer, prediction_id, case_id, or created_at
+    for forbidden in ["disclaimer", "prediction_id", "case_id", "created_at"]:
+        assert forbidden not in result
+
+    # 3. Synthetic string assertion in version and explanation
     assert "SYNTHETIC" in result["model_version"]
     assert "SYNTHETIC" in result["explanation"]
 
-    # 3. Risk score and level never None
+    # 4. Risk score and level never None; risk_level is lowercase enum
     assert result["risk_score"] is not None
     assert result["risk_level"] is not None
     assert isinstance(result["risk_score"], float)
     assert 0.0 <= result["risk_score"] <= 1.0
     assert result["risk_level"] in ["low", "medium", "high", "critical"]
 
-    # 4. Candidate locations verification
+    # 5. Candidate locations verification
     assert isinstance(result["candidate_locations"], list)
     if result["candidate_locations"]:
         for cand in result["candidate_locations"]:
-            # Latitude and longitude must strictly be floats
+            # Strict Rule: name = "<district>, <state>"
+            assert cand["name"] == f"{cand['district']}, {cand['state']}"
+
+            # Strict Rule: Coordinates within [-90, 90] and [-180, 180]
             assert isinstance(cand["latitude"], float)
             assert isinstance(cand["longitude"], float)
             assert -90.0 <= cand["latitude"] <= 90.0
             assert -180.0 <= cand["longitude"] <= 180.0
+
+            # Strict Rule: confidence_score clipped to [0, 1]
             assert isinstance(cand["confidence_score"], float)
             assert 0.0 <= cand["confidence_score"] <= 1.0
+
+            # Strict Rule: withdrawal_window_hours is None
             assert cand["withdrawal_window_hours"] is None
+
+            # Strict Rule: No disclaimer inside candidate
+            assert "disclaimer" not in cand
             assert cand["district"] != config.OTHER_CLASS_LABEL
 
         # Probabilities sum <= 1
@@ -197,17 +241,17 @@ def test_predict_candidate_locations_contract(tiny_model_env):
         assert result["risk_score"] == result["candidate_locations"][0]["confidence_score"]
 
 
-def test_predict_unseen_category_and_missing_amount(tiny_model_env):
+def test_predict_unseen_category_state_channel(tiny_model_env):
     """
-    Test unseen category handling and missing reported_amount without crashing.
+    Test unseen category, state, and channel are mapped to 'other'
+    and noted in key_risk_factors without failing.
     """
     payload = {
         "case_id": "TEST-NOVEL-01",
-        # Unseen category
+        "reported_amount": 50000.0,
         "category": "completely_unseen_quantum_crypto_scam_2026",
-        # Missing reported_amount
-        "victim_state": "Jharkhand",
-        "victim_district": "Jamtara",
+        "victim_state": "Atlantis",
+        "victim_district": "Poseidon_City",
         "source_channel": "UNREGISTERED_PAYMENT_CHANNEL",
     }
 
@@ -216,13 +260,40 @@ def test_predict_unseen_category_and_missing_amount(tiny_model_env):
     # Must execute safely without crashing
     assert result["model_version"].startswith("SYNTHETIC")
     assert result["risk_score"] is not None
-    assert result["risk_level"] is not None
+    assert result["risk_level"] in ["low", "medium", "high", "critical"]
     assert isinstance(result["risk_score"], float)
 
     # Out-of-vocabulary mappings must be documented in key_risk_factors
     risk_factors_str = " ".join(result["key_risk_factors"])
     assert "Category mapped to 'other'" in risk_factors_str
     assert "Source channel mapped to 'other'" in risk_factors_str
+    assert "Victim state mapped to 'other'" in risk_factors_str
+
+
+def test_reporting_delay_hours_computation(tiny_model_env):
+    """
+    Verify optional incident_date and reported_at compute reporting_delay_hours;
+    otherwise leave it missing from output dict.
+    """
+    # 1. Both present -> reporting_delay_hours computed
+    payload_with_dates = {
+        "case_id": "DELAY-CASE-01",
+        "reported_amount": 60000.0,
+        "incident_date": "2026-10-15T10:00:00",
+        "reported_at": "2026-10-15T14:30:00",
+    }
+    result_with = predict_candidate_locations(payload_with_dates)
+    assert "reporting_delay_hours" in result_with
+    assert result_with["reporting_delay_hours"] == 4.5
+    assert any("Reporting delay: 4.5 hours" in rf for rf in result_with["key_risk_factors"])
+
+    # 2. Absent -> reporting_delay_hours left missing
+    payload_no_dates = {
+        "case_id": "DELAY-CASE-02",
+        "reported_amount": 60000.0,
+    }
+    result_without = predict_candidate_locations(payload_no_dates)
+    assert "reporting_delay_hours" not in result_without
 
 
 def test_top_k_bounds(tiny_model_env):
@@ -230,6 +301,7 @@ def test_top_k_bounds(tiny_model_env):
     # Test top_k = 1
     res_1 = predict_candidate_locations({
         "case_id": 1,
+        "reported_amount": 25000.0,
         "overrides": {"top_k": 1},
     })
     assert len(res_1["candidate_locations"]) <= 1
@@ -237,12 +309,14 @@ def test_top_k_bounds(tiny_model_env):
     # Test top_k = 0 or negative (must be clamped to at least 1)
     res_zero = predict_candidate_locations({
         "case_id": 2,
+        "reported_amount": 25000.0,
         "overrides": {"top_k": 0},
     })
     assert len(res_zero["candidate_locations"]) >= 1
 
     res_neg = predict_candidate_locations({
         "case_id": 3,
+        "reported_amount": 25000.0,
         "overrides": {"top_k": -5},
     })
     assert len(res_neg["candidate_locations"]) >= 1
@@ -250,6 +324,7 @@ def test_top_k_bounds(tiny_model_env):
     # Test invalid string top_k (falls back to default without crash)
     res_invalid = predict_candidate_locations({
         "case_id": 4,
+        "reported_amount": 25000.0,
         "overrides": {"top_k": "invalid_number"},
     })
     assert isinstance(res_invalid["candidate_locations"], list)
@@ -278,7 +353,7 @@ def test_risk_score_and_level_never_none_when_empty_candidates(
     locations meet coordinate criteria.
     """
     monkeypatch.setattr(config, "DISTRICT_COORDINATES", {})
-    payload = {"case_id": 999}
+    payload = {"case_id": 999, "reported_amount": 50000.0}
     result = predict_candidate_locations(payload)
 
     assert result["candidate_locations"] == []

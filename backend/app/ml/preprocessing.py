@@ -120,9 +120,15 @@ def clean_and_normalize_record(
         )
         norm_channel = "other"
 
-    # 3. Location normalization
+    # 3. Location normalization & out-of-vocabulary state mapping
     raw_state = payload.get(config.PAYLOAD_VICTIM_STATE) or "Unknown"
     norm_state = normalize_location_string(raw_state)
+    known_states_set = set(s.lower() for s in config.KNOWN_STATES)
+    if norm_state.lower() not in known_states_set and norm_state.lower() != "unknown":
+        mapping_notes.append(
+            f"Victim state mapped to 'other' (unseen state: '{raw_state}')"
+        )
+        norm_state = "other"
 
     raw_district = payload.get(config.PAYLOAD_VICTIM_DISTRICT) or "Unknown"
     norm_district = normalize_location_string(raw_district)

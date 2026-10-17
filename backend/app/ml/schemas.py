@@ -4,7 +4,7 @@ Internal schemas aligning strictly with Worker 1's service interface.
 """
 
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from backend.app.ml.config import config
 
 
@@ -31,29 +31,27 @@ class PredictionRequest(BaseModel):
 
 class CandidateLocation(BaseModel):
     """Predicted candidate location for potential cash-out operations."""
+    model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(description="Designation of candidate location or cluster")
+    name: str = Field(description="Format: '<district>, <state>'")
     latitude: float = Field(ge=-90.0, le=90.0, description="WGS84 Latitude")
     longitude: float = Field(ge=-180.0, le=180.0, description="WGS84 Longitude")
     district: str = Field(description="Forecasted district")
     state: str = Field(description="Forecasted state")
-    confidence_score: float = Field(ge=0.0, le=1.0, description="Model confidence score between 0.0 and 1.0")
+    confidence_score: float = Field(ge=0.0, le=1.0, description="Confidence score clipped to [0, 1]")
     withdrawal_window_hours: Optional[float] = Field(
         default=None,
-        description="Estimated operational cash-out window in hours from incident report",
-    )
-    disclaimer: str = Field(
-        default="Predicted candidate location only - not confirmed cash withdrawal or proof of criminal activity.",
-        description="Mandatory investigative disclaimer",
+        description="Always None (unobservable at inference time)",
     )
 
 
 class PredictionResponse(BaseModel):
     """Output contract returned by the predictive engine."""
+    model_config = ConfigDict(extra="forbid")
 
     model_version: str = Field(description="Model identifier version string")
     risk_score: float = Field(ge=0.0, le=1.0, description="Top-1 candidate confidence score")
-    risk_level: str = Field(description="Risk tier: low, medium, high, critical")
+    risk_level: str = Field(description="Risk tier: exactly low, medium, high, critical")
     candidate_locations: List[CandidateLocation] = Field(
         default_factory=list,
         description="Ranked candidate locations where cash-out is forecasted",
@@ -63,6 +61,10 @@ class PredictionResponse(BaseModel):
         description="Model explanation factors and signal notes",
     )
     explanation: str = Field(description="Investigative rationale and heuristic disclosure")
+    reporting_delay_hours: Optional[float] = Field(
+        default=None,
+        description="Computed reporting delay in hours if incident_date and reported_at present",
+    )
 
 
 class EvaluationMetrics(BaseModel):
